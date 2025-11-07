@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { Helmet } from "react-helmet";
-import { MapPin, Hotel, UtensilsCrossed, Landmark, Shield, Navigation, Heart, Filter } from "lucide-react";
+import { MapPin, Hotel, UtensilsCrossed, Landmark, Shield, Navigation, Heart, Filter, Key } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
+import { APIProvider, Map, AdvancedMarker, Pin } from "@vis.gl/react-google-maps";
 
 interface Location {
   id: string;
@@ -23,6 +25,7 @@ const InteractiveMap = () => {
   const [activeFilters, setActiveFilters] = useState<string[]>(["attraction", "hotel", "restaurant", "safety"]);
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [showRouteOptions, setShowRouteOptions] = useState(false);
+  const [apiKey, setApiKey] = useState("");
 
   const locations: Location[] = [
     {
@@ -124,6 +127,26 @@ const InteractiveMap = () => {
     return filter ? filter.color : "bg-gray-500";
   };
 
+  const getMarkerColor = (category: string) => {
+    switch (category) {
+      case "attraction": return "#3b82f6"; // blue
+      case "hotel": return "#a855f7"; // purple
+      case "restaurant": return "#f97316"; // orange
+      case "safety": return "#22c55e"; // green
+      default: return "#6b7280"; // gray
+    }
+  };
+
+  // Calculate center of all locations
+  const center = {
+    lat: filteredLocations.length > 0 
+      ? filteredLocations.reduce((sum, loc) => sum + loc.lat, 0) / filteredLocations.length
+      : 48.8566,
+    lng: filteredLocations.length > 0
+      ? filteredLocations.reduce((sum, loc) => sum + loc.lng, 0) / filteredLocations.length
+      : 2.3522,
+  };
+
   return (
     <>
       <Helmet>
@@ -142,6 +165,38 @@ const InteractiveMap = () => {
               Explore attractions, hotels, restaurants, and safety points
             </p>
           </header>
+
+          {/* API Key Input */}
+          {!apiKey && (
+            <Card className="mb-6 border-primary/30 bg-primary/5">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <Key className="h-5 w-5 text-primary mt-1" />
+                  <div className="flex-1 space-y-2">
+                    <h3 className="font-semibold text-foreground">Google Maps API Key Required</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Enter your Google Maps API key to view the interactive map. Get one at{" "}
+                      <a 
+                        href="https://developers.google.com/maps/documentation/javascript/get-api-key" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline"
+                      >
+                        Google Cloud Console
+                      </a>
+                    </p>
+                    <Input
+                      type="text"
+                      placeholder="Enter Google Maps API Key"
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                      className="max-w-md"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Filters */}
           <section className="mb-6" aria-label="Map filters">
@@ -175,35 +230,44 @@ const InteractiveMap = () => {
             {/* Map Display */}
             <section className="lg:col-span-2" aria-label="Map view">
               <Card className="border-primary/20 shadow-lg overflow-hidden">
-                <div className="relative bg-muted/30 h-[600px] flex items-center justify-center">
-                  {/* Simulated Map */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-green-50/50 dark:from-blue-950/20 dark:to-green-950/20">
-                    {filteredLocations.map((location) => {
-                      const Icon = getCategoryIcon(location.category);
-                      const colorClass = getCategoryColor(location.category);
-                      return (
-                        <button
-                          key={location.id}
-                          className={`absolute p-2 rounded-full ${colorClass} text-white shadow-lg hover:scale-110 transition-transform cursor-pointer`}
-                          style={{
-                            left: `${(location.lng - 2.2) * 400}px`,
-                            top: `${(48.87 - location.lat) * 800}px`,
-                          }}
-                          onClick={() => setSelectedLocation(location)}
-                          aria-label={`View details for ${location.name}`}
-                        >
-                          <Icon className="h-5 w-5" aria-hidden="true" />
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <div className="relative z-10 text-center p-6 bg-background/80 backdrop-blur-sm rounded-lg shadow-xl">
-                    <MapPin className="h-12 w-12 text-primary mx-auto mb-4" aria-hidden="true" />
-                    <h3 className="text-xl font-semibold mb-2">Interactive Map View</h3>
-                    <p className="text-muted-foreground">
-                      Click on markers to view location details
-                    </p>
-                  </div>
+                <div className="relative bg-muted/30 h-[600px]">
+                  {apiKey ? (
+                    <APIProvider apiKey={apiKey}>
+                      <Map
+                        mapId="wandernest-map"
+                        defaultCenter={center}
+                        defaultZoom={13}
+                        gestureHandling="greedy"
+                        disableDefaultUI={false}
+                        style={{ width: '100%', height: '100%' }}
+                      >
+                        {filteredLocations.map((location) => (
+                          <AdvancedMarker
+                            key={location.id}
+                            position={{ lat: location.lat, lng: location.lng }}
+                            onClick={() => setSelectedLocation(location)}
+                            title={location.name}
+                          >
+                            <Pin
+                              background={getMarkerColor(location.category)}
+                              glyphColor="#ffffff"
+                              borderColor="#ffffff"
+                            />
+                          </AdvancedMarker>
+                        ))}
+                      </Map>
+                    </APIProvider>
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-blue-50/50 to-green-50/50 dark:from-blue-950/20 dark:to-green-950/20">
+                      <div className="text-center p-6 bg-background/80 backdrop-blur-sm rounded-lg shadow-xl">
+                        <Key className="h-12 w-12 text-primary mx-auto mb-4" aria-hidden="true" />
+                        <h3 className="text-xl font-semibold mb-2">Google Maps API Key Required</h3>
+                        <p className="text-muted-foreground">
+                          Enter your API key above to view the interactive map
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </Card>
 
