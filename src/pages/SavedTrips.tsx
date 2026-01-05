@@ -1,9 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   MapPin, 
   Calendar, 
@@ -14,79 +20,193 @@ import {
   Plus, 
   Heart,
   Clock,
-  Plane
+  Plane,
+  LogIn
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
+import { format } from "date-fns";
 
-interface Trip {
+interface SavedTrip {
   id: string;
-  destination: string;
-  dates: string;
-  duration: string;
-  budget: number;
-  image: string;
-  status: "upcoming" | "past" | "wishlist";
-  activities: number;
+  destination_name: string;
+  destination_country: string;
+  destination_image: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  notes: string | null;
+  budget: number | null;
+  status: string;
+  created_at: string;
 }
 
 const SavedTrips = () => {
   const { toast } = useToast();
-  const [trips, setTrips] = useState<Trip[]>([
-    {
-      id: "1",
-      destination: "Paris, France",
-      dates: "May 15-22, 2025",
-      duration: "7 days",
-      budget: 2500,
-      image: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800&auto=format&fit=crop",
-      status: "upcoming",
-      activities: 12,
-    },
-    {
-      id: "2",
-      destination: "Tokyo, Japan",
-      dates: "March 10-20, 2025",
-      duration: "10 days",
-      budget: 3200,
-      image: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800&auto=format&fit=crop",
-      status: "past",
-      activities: 18,
-    },
-    {
-      id: "3",
-      destination: "Santorini, Greece",
-      dates: "TBD",
-      duration: "5 days",
-      budget: 1800,
-      image: "https://images.unsplash.com/photo-1613395877344-13d4a8e0d49e?w=800&auto=format&fit=crop",
-      status: "wishlist",
-      activities: 8,
-    },
-  ]);
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const [trips, setTrips] = useState<SavedTrip[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingTrip, setEditingTrip] = useState<SavedTrip | null>(null);
 
-  const handleDelete = (id: string) => {
-    setTrips(trips.filter(trip => trip.id !== id));
-    toast({
-      title: "Trip Deleted",
-      description: "Your trip has been removed from your dashboard.",
-    });
+  // Form state
+  const [formData, setFormData] = useState({
+    destination_name: "",
+    destination_country: "",
+    destination_image: "",
+    start_date: "",
+    end_date: "",
+    notes: "",
+    budget: "",
+    status: "planned"
+  });
+
+  const fetchTrips = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from("saved_trips")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      toast({
+        title: "Error loading trips",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      setTrips(data || []);
+    }
+    setLoading(false);
   };
 
-  const handleView = (destination: string) => {
-    toast({
-      title: "Opening Trip",
-      description: `Loading details for ${destination}...`,
+  useEffect(() => {
+    if (user) {
+      fetchTrips();
+    } else if (!authLoading) {
+      setLoading(false);
+    }
+  }, [user, authLoading]);
+
+  const handleSaveTrip = async () => {
+    if (!user) return;
+
+    const tripData = {
+      user_id: user.id,
+      destination_name: formData.destination_name,
+      destination_country: formData.destination_country,
+      destination_image: formData.destination_image || null,
+      start_date: formData.start_date || null,
+      end_date: formData.end_date || null,
+      notes: formData.notes || null,
+      budget: formData.budget ? parseFloat(formData.budget) : null,
+      status: formData.status,
+    };
+
+    if (editingTrip) {
+      const { error } = await supabase
+        .from("saved_trips")
+        .update(tripData)
+        .eq("id", editingTrip.id);
+
+      if (error) {
+        toast({
+          title: "Error updating trip",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Trip Updated",
+          description: "Your trip has been updated successfully.",
+        });
+        fetchTrips();
+      }
+    } else {
+      const { error } = await supabase
+        .from("saved_trips")
+        .insert([tripData]);
+
+      if (error) {
+        toast({
+          title: "Error saving trip",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Trip Saved",
+          description: "Your trip has been added to your dashboard.",
+        });
+        fetchTrips();
+      }
+    }
+
+    setDialogOpen(false);
+    resetForm();
+  };
+
+  const handleDelete = async (id: string) => {
+    const { error } = await supabase
+      .from("saved_trips")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      toast({
+        title: "Error deleting trip",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      setTrips(trips.filter(trip => trip.id !== id));
+      toast({
+        title: "Trip Deleted",
+        description: "Your trip has been removed from your dashboard.",
+      });
+    }
+  };
+
+  const handleEdit = (trip: SavedTrip) => {
+    setEditingTrip(trip);
+    setFormData({
+      destination_name: trip.destination_name,
+      destination_country: trip.destination_country,
+      destination_image: trip.destination_image || "",
+      start_date: trip.start_date || "",
+      end_date: trip.end_date || "",
+      notes: trip.notes || "",
+      budget: trip.budget?.toString() || "",
+      status: trip.status,
+    });
+    setDialogOpen(true);
+  };
+
+  const resetForm = () => {
+    setEditingTrip(null);
+    setFormData({
+      destination_name: "",
+      destination_country: "",
+      destination_image: "",
+      start_date: "",
+      end_date: "",
+      notes: "",
+      budget: "",
+      status: "planned"
     });
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "upcoming":
+      case "planned":
+      case "booked":
         return <Plane className="h-4 w-4" />;
-      case "past":
+      case "completed":
         return <Clock className="h-4 w-4" />;
-      case "wishlist":
+      case "cancelled":
         return <Heart className="h-4 w-4" />;
       default:
         return null;
@@ -95,12 +215,14 @@ const SavedTrips = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "upcoming":
+      case "planned":
+        return "bg-blue-500/10 text-blue-600 border-blue-500/20";
+      case "booked":
         return "bg-primary/10 text-primary border-primary/20";
-      case "past":
+      case "completed":
+        return "bg-green-500/10 text-green-600 border-green-500/20";
+      case "cancelled":
         return "bg-muted text-muted-foreground border-border";
-      case "wishlist":
-        return "bg-destructive/10 text-destructive border-destructive/20";
       default:
         return "";
     }
@@ -108,15 +230,26 @@ const SavedTrips = () => {
 
   const filterTrips = (status: string) => {
     if (status === "all") return trips;
+    if (status === "upcoming") return trips.filter(trip => trip.status === "planned" || trip.status === "booked");
+    if (status === "past") return trips.filter(trip => trip.status === "completed");
+    if (status === "wishlist") return trips.filter(trip => trip.status === "cancelled");
     return trips.filter(trip => trip.status === status);
   };
 
-  const TripCard = ({ trip }: { trip: Trip }) => (
+  const formatDateRange = (startDate: string | null, endDate: string | null) => {
+    if (!startDate) return "Dates not set";
+    const start = format(new Date(startDate), "MMM d, yyyy");
+    if (!endDate) return start;
+    const end = format(new Date(endDate), "MMM d, yyyy");
+    return `${start} - ${end}`;
+  };
+
+  const TripCard = ({ trip }: { trip: SavedTrip }) => (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow">
       <div className="relative h-48 overflow-hidden">
         <img 
-          src={trip.image} 
-          alt={trip.destination}
+          src={trip.destination_image || `https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&auto=format&fit=crop`} 
+          alt={trip.destination_name}
           className="w-full h-full object-cover transition-transform hover:scale-105"
         />
         <div className="absolute top-4 right-4">
@@ -129,41 +262,36 @@ const SavedTrips = () => {
         </div>
       </div>
       <CardHeader>
-        <CardTitle className="text-xl">{trip.destination}</CardTitle>
+        <CardTitle className="text-xl">{trip.destination_name}</CardTitle>
         <CardDescription className="space-y-2">
           <div className="flex items-center gap-2">
+            <MapPin className="h-4 w-4" />
+            <span>{trip.destination_country}</span>
+          </div>
+          <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
-            <span>{trip.dates}</span>
+            <span>{formatDateRange(trip.start_date, trip.end_date)}</span>
           </div>
-          <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1">
-              <Clock className="h-4 w-4" />
-              {trip.duration}
-            </span>
-            <span className="flex items-center gap-1">
+          {trip.budget && (
+            <div className="flex items-center gap-1">
               <DollarSign className="h-4 w-4" />
-              ${trip.budget}
-            </span>
-          </div>
+              <span>${trip.budget.toLocaleString()}</span>
+            </div>
+          )}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            {trip.activities} activities planned
-          </p>
-          <div className="flex gap-2">
+          {trip.notes && (
+            <p className="text-sm text-muted-foreground truncate max-w-[150px]">
+              {trip.notes}
+            </p>
+          )}
+          <div className="flex gap-2 ml-auto">
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => handleView(trip.destination)}
-            >
-              <Eye className="h-4 w-4 mr-1" />
-              View
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
+              onClick={() => handleEdit(trip)}
             >
               <Edit className="h-4 w-4 mr-1" />
               Edit
@@ -192,16 +320,43 @@ const SavedTrips = () => {
           {type === "upcoming" && "Start planning your next adventure!"}
           {type === "past" && "Your travel memories will appear here"}
           {type === "wishlist" && "Add destinations you dream of visiting"}
+          {type === "all" && "Create your first trip to get started"}
         </p>
-        <Link to="/itinerary-builder">
+        <Button onClick={() => { resetForm(); setDialogOpen(true); }}>
+          <Plus className="h-4 w-4 mr-2" />
+          Create New Trip
+        </Button>
+      </div>
+    </Card>
+  );
+
+  const NotLoggedIn = () => (
+    <Card className="p-12">
+      <div className="text-center space-y-4">
+        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 mb-4">
+          <LogIn className="h-10 w-10 text-primary" />
+        </div>
+        <h3 className="text-xl font-semibold">Sign in to save trips</h3>
+        <p className="text-muted-foreground max-w-sm mx-auto">
+          Create an account or sign in to save your trips and access them from anywhere.
+        </p>
+        <Link to="/auth">
           <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Create New Trip
+            <LogIn className="h-4 w-4 mr-2" />
+            Sign In
           </Button>
         </Link>
       </div>
     </Card>
   );
+
+  if (authLoading || loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -221,12 +376,112 @@ const SavedTrips = () => {
               <p className="text-lg text-muted-foreground mb-6">
                 Manage your upcoming adventures, past travels, and dream destinations
               </p>
-              <Link to="/itinerary-builder">
-                <Button size="lg">
-                  <Plus className="h-5 w-5 mr-2" />
-                  Create New Trip
-                </Button>
-              </Link>
+              {user && (
+                <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
+                  <DialogTrigger asChild>
+                    <Button size="lg">
+                      <Plus className="h-5 w-5 mr-2" />
+                      Create New Trip
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>{editingTrip ? "Edit Trip" : "Create New Trip"}</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="destination_name">Destination Name *</Label>
+                        <Input
+                          id="destination_name"
+                          value={formData.destination_name}
+                          onChange={(e) => setFormData({ ...formData, destination_name: e.target.value })}
+                          placeholder="e.g., Paris"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="destination_country">Country *</Label>
+                        <Input
+                          id="destination_country"
+                          value={formData.destination_country}
+                          onChange={(e) => setFormData({ ...formData, destination_country: e.target.value })}
+                          placeholder="e.g., France"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="destination_image">Image URL</Label>
+                        <Input
+                          id="destination_image"
+                          value={formData.destination_image}
+                          onChange={(e) => setFormData({ ...formData, destination_image: e.target.value })}
+                          placeholder="https://..."
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="start_date">Start Date</Label>
+                          <Input
+                            id="start_date"
+                            type="date"
+                            value={formData.start_date}
+                            onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="end_date">End Date</Label>
+                          <Input
+                            id="end_date"
+                            type="date"
+                            value={formData.end_date}
+                            onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="budget">Budget</Label>
+                          <Input
+                            id="budget"
+                            type="number"
+                            value={formData.budget}
+                            onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
+                            placeholder="e.g., 2500"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="status">Status</Label>
+                          <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="planned">Planned</SelectItem>
+                              <SelectItem value="booked">Booked</SelectItem>
+                              <SelectItem value="completed">Completed</SelectItem>
+                              <SelectItem value="cancelled">Cancelled</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="notes">Notes</Label>
+                        <Textarea
+                          id="notes"
+                          value={formData.notes}
+                          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                          placeholder="Any notes about your trip..."
+                        />
+                      </div>
+                      <Button 
+                        onClick={handleSaveTrip} 
+                        className="w-full"
+                        disabled={!formData.destination_name || !formData.destination_country}
+                      >
+                        {editingTrip ? "Update Trip" : "Save Trip"}
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              )}
             </div>
           </div>
         </section>
@@ -234,62 +489,66 @@ const SavedTrips = () => {
         {/* Main Content */}
         <section className="py-12">
           <div className="container mx-auto px-4 max-w-7xl">
-            <Tabs defaultValue="all" className="space-y-8">
-              <TabsList className="grid w-full max-w-md mx-auto grid-cols-4">
-                <TabsTrigger value="all">All</TabsTrigger>
-                <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-                <TabsTrigger value="past">Past</TabsTrigger>
-                <TabsTrigger value="wishlist">Wishlist</TabsTrigger>
-              </TabsList>
+            {!user ? (
+              <NotLoggedIn />
+            ) : (
+              <Tabs defaultValue="all" className="space-y-8">
+                <TabsList className="grid w-full max-w-md mx-auto grid-cols-4">
+                  <TabsTrigger value="all">All</TabsTrigger>
+                  <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+                  <TabsTrigger value="past">Past</TabsTrigger>
+                  <TabsTrigger value="wishlist">Cancelled</TabsTrigger>
+                </TabsList>
 
-              <TabsContent value="all" className="space-y-6">
-                {trips.length === 0 ? (
-                  <EmptyState type="all" />
-                ) : (
-                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {trips.map(trip => (
-                      <TripCard key={trip.id} trip={trip} />
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
+                <TabsContent value="all" className="space-y-6">
+                  {trips.length === 0 ? (
+                    <EmptyState type="all" />
+                  ) : (
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {trips.map(trip => (
+                        <TripCard key={trip.id} trip={trip} />
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
 
-              <TabsContent value="upcoming" className="space-y-6">
-                {filterTrips("upcoming").length === 0 ? (
-                  <EmptyState type="upcoming" />
-                ) : (
-                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filterTrips("upcoming").map(trip => (
-                      <TripCard key={trip.id} trip={trip} />
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
+                <TabsContent value="upcoming" className="space-y-6">
+                  {filterTrips("upcoming").length === 0 ? (
+                    <EmptyState type="upcoming" />
+                  ) : (
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {filterTrips("upcoming").map(trip => (
+                        <TripCard key={trip.id} trip={trip} />
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
 
-              <TabsContent value="past" className="space-y-6">
-                {filterTrips("past").length === 0 ? (
-                  <EmptyState type="past" />
-                ) : (
-                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filterTrips("past").map(trip => (
-                      <TripCard key={trip.id} trip={trip} />
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
+                <TabsContent value="past" className="space-y-6">
+                  {filterTrips("past").length === 0 ? (
+                    <EmptyState type="past" />
+                  ) : (
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {filterTrips("past").map(trip => (
+                        <TripCard key={trip.id} trip={trip} />
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
 
-              <TabsContent value="wishlist" className="space-y-6">
-                {filterTrips("wishlist").length === 0 ? (
-                  <EmptyState type="wishlist" />
-                ) : (
-                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filterTrips("wishlist").map(trip => (
-                      <TripCard key={trip.id} trip={trip} />
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
+                <TabsContent value="wishlist" className="space-y-6">
+                  {filterTrips("wishlist").length === 0 ? (
+                    <EmptyState type="wishlist" />
+                  ) : (
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {filterTrips("wishlist").map(trip => (
+                        <TripCard key={trip.id} trip={trip} />
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
+            )}
           </div>
         </section>
 
