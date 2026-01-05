@@ -230,10 +230,10 @@ const Index = () => {
                     ))}
                   </div>
                   <CardTitle className="text-lg">{testimonial.name}</CardTitle>
-                  <p className="text-sm text-muted-foreground">{testimonial.location}</p>
+                  <p className="text-sm text-foreground/60">{testimonial.location}</p>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground mb-4">"{testimonial.text}"</p>
+                  <p className="text-foreground/80 mb-4">"{testimonial.text}"</p>
                   <Badge variant="secondary" className="text-xs">
                     {testimonial.trip}
                   </Badge>
@@ -260,7 +260,7 @@ const Index = () => {
               </Button>
             </Link>
             <Link to="/destinations">
-              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
+              <Button size="lg" className="bg-white/20 text-white border-2 border-white hover:bg-white hover:text-primary">
                 Browse Destinations
               </Button>
             </Link>
