@@ -36,6 +36,7 @@ import NearbyAttractions from "./pages/NearbyAttractions";
 import EmergencyContacts from "./pages/EmergencyContacts";
 import CurrencyConverter from "./pages/CurrencyConverter";
 import Auth from "./pages/Auth";
+import SharedTrip from "./pages/SharedTrip";
 import SOSButton from "./components/SOSButton";
 import NotFound from "./pages/NotFound";
 
@@ -83,6 +84,7 @@ const App = () => {
                   <Route path="/book" element={<BookTrip />} />
                   <Route path="/about" element={<About />} />
                   <Route path="/contact" element={<Contact />} />
+                  <Route path="/shared/:token" element={<SharedTrip />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>

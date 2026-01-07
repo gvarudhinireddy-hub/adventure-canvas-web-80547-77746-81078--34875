@@ -23,7 +23,11 @@ import {
   Plane,
   LogIn,
   History,
-  RotateCcw
+  RotateCcw,
+  Share2,
+  Copy,
+  Check,
+  Link as LinkIcon
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -69,6 +73,10 @@ const SavedTrips = () => {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTrip, setEditingTrip] = useState<SavedTrip | null>(null);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [sharingTrip, setSharingTrip] = useState<SavedTrip | null>(null);
+  const [shareLink, setShareLink] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -335,6 +343,55 @@ const SavedTrips = () => {
     </Card>
   );
 
+  const handleShare = async (trip: SavedTrip) => {
+    if (!user) return;
+
+    setSharingTrip(trip);
+    setShareDialogOpen(true);
+    setShareLink(null);
+    setCopied(false);
+
+    // Check if a share already exists
+    const { data: existingShare } = await supabase
+      .from("shared_trips")
+      .select("share_token")
+      .eq("trip_id", trip.id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (existingShare) {
+      setShareLink(`${window.location.origin}/shared/${existingShare.share_token}`);
+    } else {
+      // Create new share
+      const { data: newShare, error } = await supabase
+        .from("shared_trips")
+        .insert([{ trip_id: trip.id, user_id: user.id }])
+        .select("share_token")
+        .single();
+
+      if (error) {
+        toast({
+          title: "Error creating share link",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        setShareLink(`${window.location.origin}/shared/${newShare.share_token}`);
+      }
+    }
+  };
+
+  const copyToClipboard = async () => {
+    if (!shareLink) return;
+    await navigator.clipboard.writeText(shareLink);
+    setCopied(true);
+    toast({
+      title: "Link copied!",
+      description: "Share this link with your friends",
+    });
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   const TripCard = ({ trip }: { trip: SavedTrip }) => (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow">
       <div className="relative h-48 overflow-hidden">
@@ -374,7 +431,7 @@ const SavedTrips = () => {
       <CardContent>
         <div className="flex items-center justify-between">
           {trip.notes && (
-            <p className="text-sm text-muted-foreground truncate max-w-[150px]">
+            <p className="text-sm text-muted-foreground truncate max-w-[100px]">
               {trip.notes}
             </p>
           )}
@@ -382,10 +439,17 @@ const SavedTrips = () => {
             <Button 
               variant="outline" 
               size="sm"
+              onClick={() => handleShare(trip)}
+              title="Share trip"
+            >
+              <Share2 className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
               onClick={() => handleEdit(trip)}
             >
-              <Edit className="h-4 w-4 mr-1" />
-              Edit
+              <Edit className="h-4 w-4" />
             </Button>
             <Button 
               variant="outline" 
@@ -677,6 +741,56 @@ const SavedTrips = () => {
             )}
           </div>
         </section>
+
+        {/* Share Dialog */}
+        <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Share2 className="h-5 w-5 text-primary" />
+                Share Trip
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              {sharingTrip && (
+                <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                  <MapPin className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="font-medium">{sharingTrip.destination_name}</p>
+                    <p className="text-sm text-muted-foreground">{sharingTrip.destination_country}</p>
+                  </div>
+                </div>
+              )}
+              
+              {shareLink ? (
+                <div className="space-y-3">
+                  <Label>Share Link</Label>
+                  <div className="flex gap-2">
+                    <Input 
+                      value={shareLink} 
+                      readOnly 
+                      className="text-sm"
+                    />
+                    <Button onClick={copyToClipboard} variant="outline">
+                      {copied ? (
+                        <Check className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Anyone with this link can view your trip details
+                  </p>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Footer */}
         <footer className="border-t py-8 mt-12">

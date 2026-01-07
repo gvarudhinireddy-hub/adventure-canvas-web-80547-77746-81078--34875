@@ -89,6 +89,44 @@ export type Database = {
         }
         Relationships: []
       }
+      shared_trips: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_public: boolean | null
+          share_token: string
+          trip_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_public?: boolean | null
+          share_token?: string
+          trip_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_public?: boolean | null
+          share_token?: string
+          trip_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_trips_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "saved_trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trip_history: {
         Row: {
           action: string
