@@ -14,17 +14,62 @@ import {
   Clock,
   ChevronRight,
   ArrowLeft,
-  Map
+  Map,
+  Heart,
+  Check
 } from "lucide-react";
 import { destinations, Destination } from "@/data/destinations";
 import { CurrencySelector } from "@/components/CurrencySelector";
 import { Price } from "@/components/Price";
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const DestinationDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const destination = destinations.find(d => d.id === Number(id));
+
+  const handleSaveTrip = async () => {
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+
+    if (!destination) return;
+
+    setSaving(true);
+    try {
+      const { error } = await supabase.from("saved_trips").insert([{
+        user_id: user.id,
+        destination_name: destination.name,
+        destination_country: destination.country,
+        destination_image: destination.image || null,
+        status: "planned"
+      }]);
+
+      if (error) throw error;
+
+      setSaved(true);
+      toast({
+        title: "Trip Saved!",
+        description: `${destination.name} has been added to your saved trips.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error saving trip",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (!destination) {
     return (
@@ -131,6 +176,25 @@ const DestinationDetails = () => {
               <div className="flex flex-wrap gap-4">
                 <Button size="lg" className="bg-white text-primary hover:bg-white/90">
                   Book This Destination
+                </Button>
+                <Button 
+                  size="lg" 
+                  variant="outline" 
+                  className="border-white text-white hover:bg-white/10"
+                  onClick={handleSaveTrip}
+                  disabled={saving || saved}
+                >
+                  {saved ? (
+                    <>
+                      <Check className="h-5 w-5 mr-2" />
+                      Saved!
+                    </>
+                  ) : (
+                    <>
+                      <Heart className="h-5 w-5 mr-2" />
+                      {saving ? "Saving..." : "Save Trip"}
+                    </>
+                  )}
                 </Button>
                 <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
                   Add to Itinerary
