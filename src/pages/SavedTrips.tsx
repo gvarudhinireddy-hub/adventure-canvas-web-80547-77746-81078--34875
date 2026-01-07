@@ -21,7 +21,9 @@ import {
   Heart,
   Clock,
   Plane,
-  LogIn
+  LogIn,
+  History,
+  RotateCcw
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -42,12 +44,29 @@ interface SavedTrip {
   created_at: string;
 }
 
+interface TripHistoryEntry {
+  id: string;
+  trip_id: string;
+  destination_name: string;
+  destination_country: string;
+  destination_image: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  notes: string | null;
+  budget: number | null;
+  status: string | null;
+  action: string;
+  changed_at: string;
+}
+
 const SavedTrips = () => {
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [trips, setTrips] = useState<SavedTrip[]>([]);
+  const [history, setHistory] = useState<TripHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTrip, setEditingTrip] = useState<SavedTrip | null>(null);
 
@@ -90,6 +109,27 @@ const SavedTrips = () => {
       setLoading(false);
     }
   }, [user, authLoading]);
+
+  const fetchHistory = async () => {
+    if (!user) return;
+
+    setHistoryLoading(true);
+    const { data, error } = await supabase
+      .from("trip_history")
+      .select("*")
+      .order("changed_at", { ascending: false });
+
+    if (error) {
+      toast({
+        title: "Error loading history",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      setHistory(data || []);
+    }
+    setHistoryLoading(false);
+  };
 
   const handleSaveTrip = async () => {
     if (!user) return;
@@ -243,6 +283,57 @@ const SavedTrips = () => {
     const end = format(new Date(endDate), "MMM d, yyyy");
     return `${start} - ${end}`;
   };
+
+  const getActionColor = (action: string) => {
+    switch (action) {
+      case "created":
+        return "bg-green-500/10 text-green-600 border-green-500/20";
+      case "updated":
+        return "bg-blue-500/10 text-blue-600 border-blue-500/20";
+      case "deleted":
+        return "bg-red-500/10 text-red-600 border-red-500/20";
+      default:
+        return "";
+    }
+  };
+
+  const HistoryCard = ({ entry }: { entry: TripHistoryEntry }) => (
+    <Card className="overflow-hidden">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg">{entry.destination_name}</CardTitle>
+          <Badge className={getActionColor(entry.action)}>
+            {entry.action.charAt(0).toUpperCase() + entry.action.slice(1)}
+          </Badge>
+        </div>
+        <CardDescription className="space-y-1">
+          <div className="flex items-center gap-2">
+            <MapPin className="h-4 w-4" />
+            <span>{entry.destination_country}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            <span>{format(new Date(entry.changed_at), "MMM d, yyyy 'at' h:mm a")}</span>
+          </div>
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
+          {entry.status && (
+            <span className="flex items-center gap-1">
+              Status: {entry.status}
+            </span>
+          )}
+          {entry.budget && (
+            <span className="flex items-center gap-1">
+              <DollarSign className="h-3 w-3" />
+              {entry.budget.toLocaleString()}
+            </span>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   const TripCard = ({ trip }: { trip: SavedTrip }) => (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow">
@@ -493,11 +584,15 @@ const SavedTrips = () => {
               <NotLoggedIn />
             ) : (
               <Tabs defaultValue="all" className="space-y-8">
-                <TabsList className="grid w-full max-w-md mx-auto grid-cols-4">
+                <TabsList className="grid w-full max-w-lg mx-auto grid-cols-5">
                   <TabsTrigger value="all">All</TabsTrigger>
                   <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
                   <TabsTrigger value="past">Past</TabsTrigger>
                   <TabsTrigger value="wishlist">Cancelled</TabsTrigger>
+                  <TabsTrigger value="history" onClick={fetchHistory}>
+                    <History className="h-4 w-4 mr-1" />
+                    History
+                  </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="all" className="space-y-6">
@@ -544,6 +639,37 @@ const SavedTrips = () => {
                       {filterTrips("wishlist").map(trip => (
                         <TripCard key={trip.id} trip={trip} />
                       ))}
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="history" className="space-y-6">
+                  {historyLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    </div>
+                  ) : history.length === 0 ? (
+                    <Card className="p-12">
+                      <div className="text-center space-y-4">
+                        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 mb-4">
+                          <RotateCcw className="h-10 w-10 text-primary" />
+                        </div>
+                        <h3 className="text-xl font-semibold">No history yet</h3>
+                        <p className="text-muted-foreground max-w-sm mx-auto">
+                          Your trip changes will be logged here automatically
+                        </p>
+                      </div>
+                    </Card>
+                  ) : (
+                    <div className="space-y-4">
+                      <p className="text-sm text-muted-foreground">
+                        Showing {history.length} change{history.length !== 1 ? 's' : ''} to your trips
+                      </p>
+                      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {history.map(entry => (
+                          <HistoryCard key={entry.id} entry={entry} />
+                        ))}
+                      </div>
                     </div>
                   )}
                 </TabsContent>
