@@ -180,7 +180,28 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_shared_trip_by_token: {
+        Args: { token: string }
+        Returns: {
+          expires_at: string
+          is_public: boolean
+          trip_id: string
+        }[]
+      }
+      get_trip_for_sharing: {
+        Args: { p_trip_id: string }
+        Returns: {
+          budget: number
+          destination_country: string
+          destination_image: string
+          destination_name: string
+          end_date: string
+          id: string
+          notes: string
+          start_date: string
+          status: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
