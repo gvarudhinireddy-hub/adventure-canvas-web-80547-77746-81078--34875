@@ -254,7 +254,7 @@ const Index = () => {
             Join thousands of travelers who've discovered the world with WanderNest
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-            <Link to="/book">
+            <Link to="/ai-concierge">
               <Button size="lg" variant="secondary" className="bg-white text-primary hover:bg-white/90">
                 Start Planning
               </Button>

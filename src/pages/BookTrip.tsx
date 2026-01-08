@@ -218,9 +218,11 @@ const BookTrip = () => {
                   </div>
                 </div>
                 
-                <Button size="lg" className="bg-primary hover:bg-primary-hover">
-                  Plan My Custom Trip
-                </Button>
+                <Link to="/ai-concierge">
+                  <Button size="lg" className="bg-primary hover:bg-primary-hover">
+                    Plan My Custom Trip
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
           </div>
