@@ -16,7 +16,7 @@ export const Navbar = ({ onOpenSidebar }: NavbarProps) => {
     { name: "Home", path: "/" },
     { name: "Destinations", path: "/destinations" },
     { name: "Plan Trip", path: "/book" },
-    { name: "Community", path: "/community" },
+    { name: "My Trips", path: "/saved-trips" },
   ];
 
   return (
