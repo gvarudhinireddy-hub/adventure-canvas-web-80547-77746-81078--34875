@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,7 +7,6 @@ import { CurrencyProvider } from "@/hooks/useCurrency";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { Navbar } from "./components/Navbar";
-import { NavigationDrawer } from "./components/NavigationDrawer";
 import Index from "./pages/Index";
 import Destinations from "./pages/Destinations";
 import DestinationDetails from "./pages/DestinationDetails";
@@ -43,8 +41,6 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const App = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
@@ -54,8 +50,7 @@ const App = () => {
               <Toaster />
               <Sonner />
               <BrowserRouter>
-                <Navbar onOpenSidebar={() => setSidebarOpen(true)} />
-                <NavigationDrawer open={sidebarOpen} onOpenChange={setSidebarOpen} />
+                <Navbar />
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/auth" element={<Auth />} />

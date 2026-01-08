@@ -1,13 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
-import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { NavigationMenu } from "./NavigationMenu";
 
-interface NavbarProps {
-  onOpenSidebar: () => void;
-}
-
-export const Navbar = ({ onOpenSidebar }: NavbarProps) => {
+export const Navbar = () => {
   const location = useLocation();
   
   const isActive = (path: string) => location.pathname === path;
@@ -71,16 +67,8 @@ export const Navbar = ({ onOpenSidebar }: NavbarProps) => {
           ))}
         </div>
 
-        {/* Hamburger Menu */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onOpenSidebar}
-          aria-label="Open menu"
-          className="hover:bg-accent"
-        >
-          <Menu className="h-5 w-5" />
-        </Button>
+        {/* Dropdown Menu */}
+        <NavigationMenu />
       </div>
     </nav>
   );
