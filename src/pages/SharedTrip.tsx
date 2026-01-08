@@ -34,46 +34,29 @@ const SharedTrip = () => {
         return;
       }
 
-      // First get the shared_trips entry
+      // Use security definer function to get shared trip by token
       const { data: shareData, error: shareError } = await supabase
-        .from("shared_trips")
-        .select("trip_id, is_public, expires_at")
-        .eq("share_token", token)
-        .maybeSingle();
+        .rpc("get_shared_trip_by_token", { token });
 
-      if (shareError || !shareData) {
-        setError("This shared trip doesn't exist or has been removed");
+      if (shareError || !shareData || shareData.length === 0) {
+        setError("This shared trip doesn't exist, has expired, or has been removed");
         setLoading(false);
         return;
       }
 
-      // Check if expired
-      if (shareData.expires_at && new Date(shareData.expires_at) < new Date()) {
-        setError("This share link has expired");
-        setLoading(false);
-        return;
-      }
+      const share = shareData[0];
 
-      if (!shareData.is_public) {
-        setError("This trip is no longer shared");
-        setLoading(false);
-        return;
-      }
-
-      // Fetch the trip data
+      // Use security definer function to get trip details
       const { data: tripData, error: tripError } = await supabase
-        .from("saved_trips")
-        .select("id, destination_name, destination_country, destination_image, start_date, end_date, notes, budget, status")
-        .eq("id", shareData.trip_id)
-        .maybeSingle();
+        .rpc("get_trip_for_sharing", { p_trip_id: share.trip_id });
 
-      if (tripError || !tripData) {
+      if (tripError || !tripData || tripData.length === 0) {
         setError("The trip associated with this link no longer exists");
         setLoading(false);
         return;
       }
 
-      setTrip(tripData);
+      setTrip(tripData[0]);
       setLoading(false);
     };
 
