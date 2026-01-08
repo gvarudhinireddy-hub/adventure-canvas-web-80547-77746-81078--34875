@@ -50,7 +50,7 @@ export const NavigationDrawer = ({ open, onOpenChange }: NavigationDrawerProps) 
     { name: "Home", path: "/", icon: Home },
     { name: "Destinations", path: "/destinations", icon: MapPin },
     { name: "Plan Trip", path: "/book", icon: Plane },
-    { name: "Community", path: "/community", icon: Users },
+    { name: "My Trips", path: "/saved-trips", icon: Wallet },
   ];
 
   const planningTools = [
@@ -58,6 +58,7 @@ export const NavigationDrawer = ({ open, onOpenChange }: NavigationDrawerProps) 
     { name: "Itinerary Builder", path: "/itinerary-builder", icon: Route },
     { name: "Travel Buddy", path: "/travel-buddy", icon: Users2 },
     { name: "AI Concierge", path: "/ai-concierge", icon: MessageSquare },
+    { name: "Community", path: "/community", icon: Users },
   ];
 
   const utilities = [
@@ -86,7 +87,6 @@ export const NavigationDrawer = ({ open, onOpenChange }: NavigationDrawerProps) 
     { name: "About Us", path: "/about", icon: Info },
     { name: "Contact", path: "/contact", icon: Mail },
     { name: "Travel Guides", path: "/guides", icon: BookOpen },
-    { name: "Saved Trips", path: "/saved-trips", icon: Wallet },
   ];
 
   const handleLinkClick = () => {
