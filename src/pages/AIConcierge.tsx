@@ -3,15 +3,22 @@ import { Helmet } from "react-helmet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Bot, Send, Loader2, Sparkles, FileText } from "lucide-react";
+import { Bot, Send, Loader2, Sparkles, FileText, Image as ImageIcon } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { logger } from "@/lib/logger";
 import { ItineraryModal } from "@/components/ItineraryModal";
 
+type UnsplashImage = {
+  url: string;
+  alt: string;
+  credit: string;
+};
+
 type Message = {
   role: "user" | "assistant";
   content: string;
+  images?: UnsplashImage[];
 };
 
 const AIConcierge = () => {
@@ -45,11 +52,32 @@ const AIConcierge = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ messages: [...messages, userMessage] }),
+        body: JSON.stringify({ messages: [...messages, userMessage].map(m => ({ role: m.role, content: m.content })) }),
       });
 
-      if (!resp.ok || !resp.body) {
-        throw new Error("Failed to get response");
+      if (!resp.ok) {
+        const errorData = await resp.json().catch(() => ({}));
+        if (resp.status === 429) {
+          toast({
+            title: "Rate Limited",
+            description: "Too many requests. Please try again in a moment.",
+            variant: "destructive",
+          });
+          return;
+        }
+        if (resp.status === 402) {
+          toast({
+            title: "Credits Required",
+            description: "Please add funds to continue using the AI concierge.",
+            variant: "destructive",
+          });
+          return;
+        }
+        throw new Error(errorData.error || "Failed to get response");
+      }
+
+      if (!resp.body) {
+        throw new Error("No response body");
       }
 
       const reader = resp.body.getReader();
@@ -57,6 +85,7 @@ const AIConcierge = () => {
       let textBuffer = "";
       let streamDone = false;
       let assistantContent = "";
+      let pendingImages: UnsplashImage[] = [];
 
       while (!streamDone) {
         const { done, value } = await reader.read();
@@ -80,6 +109,13 @@ const AIConcierge = () => {
 
           try {
             const parsed = JSON.parse(jsonStr);
+            
+            // Check for images event
+            if (parsed.type === "images" && parsed.images) {
+              pendingImages = parsed.images;
+              continue;
+            }
+            
             const content = parsed.choices?.[0]?.delta?.content as string | undefined;
             if (content) {
               assistantContent += content;
@@ -89,9 +125,14 @@ const AIConcierge = () => {
                   newMessages[newMessages.length - 1] = {
                     role: "assistant",
                     content: assistantContent,
+                    images: pendingImages.length > 0 ? pendingImages : undefined,
                   };
                 } else {
-                  newMessages.push({ role: "assistant", content: assistantContent });
+                  newMessages.push({ 
+                    role: "assistant", 
+                    content: assistantContent,
+                    images: pendingImages.length > 0 ? pendingImages : undefined,
+                  });
                 }
                 return newMessages;
               });
@@ -139,7 +180,7 @@ const AIConcierge = () => {
               <h1 className="text-4xl md:text-5xl font-bold">AI Travel Concierge</h1>
             </div>
             <p className="text-lg opacity-90 max-w-2xl mx-auto">
-              Your personal AI travel expert, ready to help plan your perfect journey
+              Your personal AI travel expert with real destination photos
             </p>
           </div>
         </header>
@@ -151,8 +192,12 @@ const AIConcierge = () => {
                 <div className="flex flex-col items-center justify-center h-full text-center p-8">
                   <Bot className="h-16 w-16 text-primary mb-4" />
                   <h2 className="text-2xl font-semibold mb-2">Welcome to Your AI Travel Concierge</h2>
-                  <p className="text-muted-foreground mb-6">
+                  <p className="text-muted-foreground mb-2">
                     Ask me anything about travel destinations, planning tips, or custom itineraries!
+                  </p>
+                  <p className="text-sm text-muted-foreground mb-6 flex items-center gap-1">
+                    <ImageIcon className="h-4 w-4" />
+                    I'll show you beautiful photos of the places you search for
                   </p>
                   <div className="grid gap-2 w-full max-w-md">
                     <Button
@@ -183,12 +228,35 @@ const AIConcierge = () => {
                       className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                     >
                       <div
-                        className={`max-w-[80%] rounded-lg p-4 ${
+                        className={`max-w-[85%] rounded-lg ${
                           msg.role === "user"
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted"
+                            ? "bg-primary text-primary-foreground p-4"
+                            : "bg-muted p-4"
                         }`}
                       >
+                        {/* Display images if available */}
+                        {msg.images && msg.images.length > 0 && (
+                          <div className="mb-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
+                              {msg.images.map((img, imgIdx) => (
+                                <div key={imgIdx} className="relative group">
+                                  <img
+                                    src={img.url}
+                                    alt={img.alt}
+                                    className="w-full h-24 sm:h-32 object-cover rounded-lg"
+                                    loading="lazy"
+                                  />
+                                  <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs p-1 rounded-b-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                                    Photo by {img.credit}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              📸 Photos from Unsplash
+                            </p>
+                          </div>
+                        )}
                         <div className="whitespace-pre-wrap">{msg.content}</div>
                       </div>
                     </div>
@@ -210,7 +278,7 @@ const AIConcierge = () => {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="Ask me anything about travel..."
+                  placeholder="Search any destination... (e.g., Tokyo, Paris, Bali)"
                   disabled={isLoading}
                   className="flex-1"
                 />
