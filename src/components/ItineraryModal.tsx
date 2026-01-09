@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Download, Save, Loader2, FileText, CheckCircle } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Download, Save, Loader2, FileText, CheckCircle, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -167,9 +167,20 @@ export const ItineraryModal = ({ open, onOpenChange, messages }: ItineraryModalP
           </div>
         ) : (
           <>
-            <ScrollArea className="h-[400px] border rounded-md p-4 bg-muted/30">
-              <pre className="whitespace-pre-wrap text-sm font-mono">{itinerary}</pre>
-            </ScrollArea>
+            <div className="relative">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground flex items-center gap-1">
+                  <Pencil className="h-3 w-3" />
+                  Click to edit your itinerary
+                </span>
+              </div>
+              <Textarea
+                value={itinerary}
+                onChange={(e) => setItinerary(e.target.value)}
+                className="h-[400px] font-mono text-sm resize-none"
+                placeholder="Your itinerary will appear here..."
+              />
+            </div>
 
             <DialogFooter className="flex-col sm:flex-row gap-2">
               <Button variant="outline" onClick={downloadItinerary}>
