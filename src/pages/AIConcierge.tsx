@@ -3,10 +3,11 @@ import { Helmet } from "react-helmet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Bot, Send, Loader2, Sparkles } from "lucide-react";
+import { Bot, Send, Loader2, Sparkles, FileText } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { logger } from "@/lib/logger";
+import { ItineraryModal } from "@/components/ItineraryModal";
 
 type Message = {
   role: "user" | "assistant";
@@ -17,6 +18,7 @@ const AIConcierge = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showItineraryModal, setShowItineraryModal] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -216,8 +218,26 @@ const AIConcierge = () => {
                   <Send className="h-4 w-4" />
                 </Button>
               </div>
+              {messages.length > 0 && (
+                <div className="mt-3 flex justify-center">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowItineraryModal(true)}
+                    className="w-full sm:w-auto"
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    Generate Itinerary
+                  </Button>
+                </div>
+              )}
             </div>
           </Card>
+
+          <ItineraryModal
+            open={showItineraryModal}
+            onOpenChange={setShowItineraryModal}
+            messages={messages}
+          />
         </main>
       </div>
     </>
