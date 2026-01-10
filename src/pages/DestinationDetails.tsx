@@ -202,10 +202,18 @@ const DestinationDetails = () => {
               </div>
             </div>
             
-            <div className="w-full md:w-96 h-64 md:h-96 bg-muted rounded-lg overflow-hidden shadow-elegant">
-              <div className="w-full h-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                <MapPin className="h-24 w-24 text-white/50" />
-              </div>
+            <div className="w-full md:w-96 h-64 md:h-96 rounded-lg overflow-hidden shadow-elegant">
+              {destination.image ? (
+                <img 
+                  src={destination.image} 
+                  alt={destination.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+                  <MapPin className="h-24 w-24 text-white/50" />
+                </div>
+              )}
             </div>
           </div>
         </div>
