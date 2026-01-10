@@ -29,7 +29,7 @@ export const SearchBar = ({
     if (onSearch) {
       onSearch(trimmedQuery);
     } else if (autoNavigate) {
-      navigate(`/destinations?search=${encodeURIComponent(trimmedQuery)}`);
+      navigate(`/search?q=${encodeURIComponent(trimmedQuery)}`);
     }
   };
 

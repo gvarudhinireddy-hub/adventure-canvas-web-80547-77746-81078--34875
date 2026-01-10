@@ -35,6 +35,7 @@ import EmergencyContacts from "./pages/EmergencyContacts";
 import CurrencyConverter from "./pages/CurrencyConverter";
 import Auth from "./pages/Auth";
 import SharedTrip from "./pages/SharedTrip";
+import SearchResults from "./pages/SearchResults";
 import SOSButton from "./components/SOSButton";
 import NotFound from "./pages/NotFound";
 
@@ -77,6 +78,7 @@ const App = () => {
                   <Route path="/emergency" element={<EmergencyContacts />} />
                   <Route path="/currency" element={<CurrencyConverter />} />
                   <Route path="/book" element={<BookTrip />} />
+                  <Route path="/search" element={<SearchResults />} />
                   <Route path="/about" element={<About />} />
                   <Route path="/contact" element={<Contact />} />
                   <Route path="/shared/:token" element={<SharedTrip />} />

@@ -12,9 +12,10 @@ import { CurrencySelector } from "@/components/CurrencySelector";
 import { Price } from "@/components/Price";
 import { SearchBar } from "@/components/SearchBar";
 
+// Map featured destinations to real destination IDs from destinations.ts
 const featuredDestinations = [
   {
-    id: 1,
+    id: 12, // Bali ID in destinations.ts
     name: "Bali, Indonesia",
     image: baliImage,
     price: "From $89/night",
@@ -22,7 +23,7 @@ const featuredDestinations = [
     description: "Tropical paradise with rice terraces, ancient temples, and pristine beaches"
   },
   {
-    id: 2,
+    id: 26, // Santorini ID in destinations.ts  
     name: "Santorini, Greece", 
     image: santoriniImage,
     price: "From $156/night",
@@ -30,7 +31,7 @@ const featuredDestinations = [
     description: "Iconic blue domes, dramatic sunsets, and charming whitewashed villages"
   },
   {
-    id: 3,
+    id: 13, // Tokyo ID in destinations.ts
     name: "Tokyo, Japan",
     image: tokyoImage,
     price: "From $78/night", 
@@ -190,7 +191,7 @@ const Index = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground mb-4">{destination.description}</p>
-                  <Link to="/destinations">
+                  <Link to={`/destinations/${destination.id}`}>
                     <Button className="w-full bg-primary hover:bg-primary-hover">
                       Explore Destination
                     </Button>

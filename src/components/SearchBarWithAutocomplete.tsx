@@ -76,7 +76,7 @@ export const SearchBarWithAutocomplete = ({
     if (onSearch) {
       onSearch(trimmedQuery);
     } else if (autoNavigate) {
-      navigate(`/destinations?search=${encodeURIComponent(trimmedQuery)}`);
+      navigate(`/search?q=${encodeURIComponent(trimmedQuery)}`);
     }
   };
 
@@ -87,7 +87,8 @@ export const SearchBarWithAutocomplete = ({
     if (onSearch) {
       onSearch(destination.name);
     } else if (autoNavigate) {
-      navigate(`/destinations?search=${encodeURIComponent(destination.name)}`);
+      // Navigate directly to the destination details page
+      navigate(`/destinations/${destination.id}`);
     }
   };
 
