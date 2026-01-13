@@ -4,22 +4,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { 
-  MapPin, 
-  Star, 
-  Calendar, 
-  DollarSign, 
+import {
+  MapPin,
+  Star,
+  Calendar,
+  DollarSign,
   ArrowLeft,
   Plane,
   Shield,
   ChevronRight,
-  Heart,
   Map,
-  Info
+  Info,
 } from "lucide-react";
 import { SearchBarWithAutocomplete } from "@/components/SearchBarWithAutocomplete";
 import { supabase } from "@/integrations/supabase/client";
-import { destinations } from "@/data/destinations";
 
 interface PlaceDetails {
   name: string;
@@ -44,18 +42,12 @@ interface UnsplashImage {
 const SearchResults = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const query = searchParams.get("q") || "";
-  
+  const query = (searchParams.get("q") || "").trim();
+
   const [loading, setLoading] = useState(true);
   const [images, setImages] = useState<UnsplashImage[]>([]);
   const [placeDetails, setPlaceDetails] = useState<PlaceDetails | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  // Check if this is an existing destination
-  const existingDestination = destinations.find(
-    d => d.name.toLowerCase() === query.toLowerCase() ||
-         d.country.toLowerCase() === query.toLowerCase()
-  );
 
   useEffect(() => {
     if (!query) {
@@ -63,28 +55,36 @@ const SearchResults = () => {
       return;
     }
 
-    // If it's an existing destination, redirect to its details page
-    if (existingDestination) {
-      navigate(`/destinations/${existingDestination.id}`, { replace: true });
-      return;
-    }
+    void fetchPlaceData(query);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
 
-    fetchPlaceData();
-  }, [query, existingDestination]);
-
-  const fetchPlaceData = async () => {
+  const fetchPlaceData = async (searchTerm: string) => {
     setLoading(true);
     setError(null);
 
     try {
-      // Fetch images and details in parallel
-      const [imagesResult, detailsResult] = await Promise.all([
-        fetchUnsplashImages(query),
-        fetchPlaceDetails(query)
-      ]);
+      // Fetch details first (it often corrects spelling/capitalization)
+      const detailsResult = await fetchPlaceDetails(searchTerm);
+      setPlaceDetails(detailsResult);
+
+      const canonicalName = (detailsResult?.name || searchTerm).trim();
+      const canonicalCountry = (detailsResult?.country || "").trim();
+      const imageQuery = canonicalCountry
+        ? `${canonicalName} ${canonicalCountry}`
+        : canonicalName;
+
+      let imagesResult = await fetchUnsplashImages(imageQuery);
+
+      // If we corrected the name and still got nothing, try just the canonical name
+      if (
+        imagesResult.length === 0 &&
+        canonicalName.toLowerCase() !== searchTerm.toLowerCase()
+      ) {
+        imagesResult = await fetchUnsplashImages(canonicalName);
+      }
 
       setImages(imagesResult);
-      setPlaceDetails(detailsResult);
     } catch (err: any) {
       console.error("Error fetching place data:", err);
       setError(err.message || "Failed to load place information");
@@ -178,7 +178,7 @@ const SearchResults = () => {
       {loading ? (
         <LoadingSkeleton />
       ) : error ? (
-        <ErrorState error={error} onRetry={fetchPlaceData} />
+        <ErrorState error={error} onRetry={() => fetchPlaceData(query)} />
       ) : (
         <>
           {/* Hero Section with Image */}
