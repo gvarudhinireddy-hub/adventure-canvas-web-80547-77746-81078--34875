@@ -35,32 +35,63 @@ function extractPlaceNames(text: string): string[] {
   return [...new Set(places.filter(p => !commonWords.has(p.toLowerCase()) && p.length > 2))];
 }
 
-// Fetch images from Unsplash
+// Fetch images from Unsplash using client_id as query parameter
 async function fetchUnsplashImages(query: string, accessKey: string): Promise<{ url: string; alt: string; credit: string }[]> {
   try {
-    const response = await fetch(
-      `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query + " travel")}&per_page=3&orientation=landscape`,
-      {
-        headers: {
-          Authorization: `Client-ID ${accessKey}`,
-        },
-      }
-    );
+    // Use client_id as query parameter (NOT Authorization header)
+    const searchUrl = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query + " travel")}&per_page=3&orientation=landscape&client_id=${accessKey}`;
+    
+    console.log("[ai-concierge] Fetching Unsplash images for:", query);
+    
+    const response = await fetch(searchUrl);
+    
+    console.log("[ai-concierge] Unsplash API response status:", response.status);
     
     if (!response.ok) {
-      console.error("Unsplash API error:", response.status);
-      return [];
+      const errorText = await response.text();
+      console.error("[ai-concierge] Unsplash API error:", response.status, errorText);
+      // Return placeholder on error
+      return [{
+        url: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&q=80",
+        alt: `${query} travel photo`,
+        credit: "Unsplash",
+      }];
     }
     
     const data = await response.json();
-    return data.results?.map((photo: any) => ({
-      url: photo.urls?.regular || photo.urls?.small,
-      alt: photo.alt_description || `${query} travel photo`,
-      credit: photo.user?.name || "Unsplash",
-    })) || [];
+    console.log("[ai-concierge] Unsplash results count:", data.results?.length || 0);
+    
+    if (!data.results || data.results.length === 0) {
+      console.log("[ai-concierge] No results found, returning placeholder");
+      return [{
+        url: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&q=80",
+        alt: `${query} travel photo`,
+        credit: "Unsplash",
+      }];
+    }
+    
+    const images = data.results.map((photo: any) => {
+      // Safely extract URL with HTTPS enforcement
+      const imageUrl = (photo.urls?.small || photo.urls?.regular || "").replace(/^http:/, 'https:');
+      console.log("[ai-concierge] Extracted image URL:", imageUrl);
+      
+      return {
+        url: imageUrl,
+        alt: photo.alt_description || `${query} travel photo`,
+        credit: photo.user?.name || "Unsplash",
+      };
+    }).filter((img: any) => img.url);
+    
+    console.log("[ai-concierge] Final images count:", images.length);
+    return images;
   } catch (error) {
-    console.error("Unsplash fetch error:", error);
-    return [];
+    console.error("[ai-concierge] Unsplash fetch error:", error);
+    // Return placeholder on error
+    return [{
+      url: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&q=80",
+      alt: `${query} travel photo`,
+      credit: "Unsplash",
+    }];
   }
 }
 
