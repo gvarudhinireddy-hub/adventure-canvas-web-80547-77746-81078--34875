@@ -1,12 +1,8 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Filter, ChevronDown, ArrowUpDown } from "lucide-react";
-import { Link } from "react-router-dom";
-import { CurrencySelector } from "@/components/CurrencySelector";
-import { Price } from "@/components/Price";
+import { Filter, ChevronDown, ArrowUpDown } from "lucide-react";
 import { SearchBarWithAutocomplete } from "@/components/SearchBarWithAutocomplete";
-import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { DestinationCard } from "@/components/destination/DestinationCard";
 import { useState, useEffect } from "react";
 import { destinations, Destination } from "@/data/destinations";
 import Fuse from "fuse.js";
@@ -348,60 +344,7 @@ const Destinations = () => {
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {paginatedDestinations.map((destination) => (
-                  <Card key={destination.id} className="overflow-hidden hover-lift shadow-card">
-                    <div className="h-64 bg-muted relative overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent z-10" />
-                      <div className="absolute bottom-4 left-4 z-20 text-white">
-                        <div className="flex items-center gap-1 mb-2">
-                          <MapPin className="h-4 w-4" />
-                          <span className="text-sm font-medium">{destination.name}, {destination.country}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="secondary" className="bg-white/20 text-white backdrop-blur-sm">
-                            ★ {destination.rating}
-                          </Badge>
-                          <Badge variant="secondary" className="bg-primary/20 text-white backdrop-blur-sm">
-                            {destination.continent}
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-                    <CardHeader>
-                      <CardTitle className="flex items-center justify-between">
-                        <div className="flex flex-col gap-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-xl">{destination.name}</span>
-                            {destination.isVerified && (
-                              <VerifiedBadge 
-                                source={destination.verificationSource || "trusted APIs"}
-                                size="sm"
-                              />
-                            )}
-                          </div>
-                          <span className="text-sm font-normal text-muted-foreground">{destination.country}</span>
-                        </div>
-                        <span className="text-lg text-primary font-bold whitespace-nowrap ml-2">
-                          <Price priceString={destination.price} showOriginal />
-                        </span>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-muted-foreground mb-3 text-sm">{destination.description}</p>
-                      <div className="flex flex-wrap gap-1 mb-4">
-                        <Badge variant="outline" className="text-xs">{destination.bestSeason}</Badge>
-                        <Badge variant="outline" className="text-xs">{destination.budgetLevel} Budget</Badge>
-                      </div>
-                      <div className="mb-4">
-                        <p className="text-xs text-muted-foreground mb-1">Top Attractions:</p>
-                        <p className="text-xs">{destination.topAttractions.slice(0, 2).join(", ")}</p>
-                      </div>
-                      <Link to={`/destinations/${destination.id}`} className="block w-full">
-                        <Button className="w-full bg-primary hover:bg-primary-hover" aria-label={`View details for ${destination.name}`}>
-                          View Details
-                        </Button>
-                      </Link>
-                    </CardContent>
-                  </Card>
+                  <DestinationCard key={destination.id} destination={destination} />
                 ))}
               </div>
 
