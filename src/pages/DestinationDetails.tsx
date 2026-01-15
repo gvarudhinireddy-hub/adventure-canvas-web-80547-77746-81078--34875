@@ -21,7 +21,7 @@ import {
 import { destinations, Destination } from "@/data/destinations";
 import { CurrencySelector } from "@/components/CurrencySelector";
 import { Price } from "@/components/Price";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -33,7 +33,50 @@ const DestinationDetails = () => {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [destinationImage, setDestinationImage] = useState<string | null>(null);
+  const [imageLoading, setImageLoading] = useState(true);
   const destination = destinations.find(d => d.id === Number(id));
+
+  // Fetch Unsplash image for destination
+  useEffect(() => {
+    const fetchImage = async () => {
+      if (!destination) return;
+      
+      try {
+        const searchQuery = `${destination.name} ${destination.country}`;
+        console.log(`[DestinationDetails] Fetching image for: ${searchQuery}`);
+        
+        const { data, error } = await supabase.functions.invoke('fetch-place-images', {
+          body: { query: searchQuery }
+        });
+
+        if (error) {
+          console.error(`[DestinationDetails] Edge function error:`, error);
+          setImageLoading(false);
+          return;
+        }
+
+        console.log(`[DestinationDetails] API response:`, data);
+
+        if (data?.images && data.images.length > 0) {
+          let url = data.images[0].url;
+          if (url && url.startsWith('http://')) {
+            url = url.replace('http://', 'https://');
+          }
+          console.log(`[DestinationDetails] Setting image URL:`, url);
+          setDestinationImage(url);
+        } else {
+          console.log(`[DestinationDetails] No images found for ${searchQuery}`);
+        }
+      } catch (err) {
+        console.error(`[DestinationDetails] Error fetching image:`, err);
+      } finally {
+        setImageLoading(false);
+      }
+    };
+
+    fetchImage();
+  }, [destination]);
 
   const handleSaveTrip = async () => {
     if (!user) {
@@ -174,13 +217,12 @@ const DestinationDetails = () => {
               </p>
               
               <div className="flex flex-wrap gap-4">
-                <Button size="lg" className="bg-white text-primary hover:bg-white/90">
+                <Button size="lg" className="bg-white text-primary hover:bg-white/90 font-semibold shadow-lg">
                   Book This Destination
                 </Button>
                 <Button 
                   size="lg" 
-                  variant="outline" 
-                  className="border-white text-white hover:bg-white/10"
+                  className="bg-primary/80 text-white hover:bg-primary border-2 border-white/50 font-semibold shadow-lg"
                   onClick={handleSaveTrip}
                   disabled={saving || saved}
                 >
@@ -196,22 +238,33 @@ const DestinationDetails = () => {
                     </>
                   )}
                 </Button>
-                <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
+                <Button 
+                  size="lg" 
+                  className="bg-accent/80 text-white hover:bg-accent border-2 border-white/50 font-semibold shadow-lg"
+                >
                   Add to Itinerary
                 </Button>
               </div>
             </div>
             
-            <div className="w-full md:w-96 h-64 md:h-96 rounded-lg overflow-hidden shadow-elegant">
-              {destination.image ? (
+            <div className="w-full md:w-96 h-64 md:h-96 rounded-lg overflow-hidden shadow-elegant bg-card">
+              {imageLoading ? (
+                <div className="w-full h-full bg-muted animate-pulse flex items-center justify-center">
+                  <MapPin className="h-16 w-16 text-muted-foreground/30" />
+                </div>
+              ) : destinationImage ? (
                 <img 
-                  src={destination.image} 
+                  src={destinationImage} 
                   alt={destination.name}
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    console.error(`[DestinationDetails] Image failed to load`);
+                    e.currentTarget.style.display = 'none';
+                  }}
                 />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                  <MapPin className="h-24 w-24 text-white/50" />
+                  <MapPin className="h-24 w-24 text-muted-foreground/30" />
                 </div>
               )}
             </div>
