@@ -572,10 +572,10 @@ const DestinationDetails = () => {
             Let us help you create the perfect itinerary for {destination.name}
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
-            <Button size="lg" variant="secondary" className="bg-white text-accent hover:bg-white/90" onClick={() => navigate("/itinerary-builder")}>
+            <Button size="lg" variant="secondary" className="bg-white text-accent hover:bg-white/90 font-semibold shadow-lg" onClick={() => navigate("/itinerary-builder")}>
               Build Custom Itinerary
             </Button>
-            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10" onClick={() => navigate("/contact")}>
+            <Button size="lg" className="bg-primary text-white hover:bg-primary/90 font-semibold shadow-lg border-2 border-white/30" onClick={() => navigate("/contact")}>
               Contact Travel Expert
             </Button>
           </div>
