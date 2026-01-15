@@ -1,8 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, MapPin, Users, Star, Clock, Plane } from "lucide-react";
+import { Calendar, MapPin, Users, Clock, Plane } from "lucide-react";
 import { Link } from "react-router-dom";
+import PackageCard from "@/components/booking/PackageCard";
 
 const packages = [
   {
@@ -14,20 +15,18 @@ const packages = [
     originalPrice: 1199,
     rating: 4.8,
     reviews: 124,
-    image: "/placeholder.svg",
     highlights: ["Rice Terrace Tours", "Temple Visits", "Beach Relaxation", "Cultural Workshops"],
     includes: ["Accommodation", "Daily Breakfast", "Airport Transfers", "Guided Tours"]
   },
   {
     id: 2,
     title: "Greek Island Hopping",
-    destination: "Santorini & Mykonos",
+    destination: "Santorini & Mykonos, Greece",
     duration: "10 Days, 9 Nights", 
     price: 1599,
     originalPrice: 1999,
     rating: 4.9,
     reviews: 89,
-    image: "/placeholder.svg",
     highlights: ["Sunset Views", "Traditional Villages", "Beach Clubs", "Local Cuisine"],
     includes: ["Accommodation", "Ferry Transfers", "Breakfast", "Wine Tasting"]
   },
@@ -40,7 +39,6 @@ const packages = [
     originalPrice: 1599,
     rating: 4.7,
     reviews: 156,
-    image: "/placeholder.svg", 
     highlights: ["Sushi Making Class", "Temple Tours", "Modern Districts", "Traditional Gardens"],
     includes: ["Hotel Stay", "JR Pass", "Cultural Activities", "Local Guide"]
   },
@@ -53,7 +51,6 @@ const packages = [
     originalPrice: 2799,
     rating: 4.6,
     reviews: 67,
-    image: "/placeholder.svg",
     highlights: ["Glacier Hiking", "Wildlife Spotting", "Mountain Views", "Expert Guides"],
     includes: ["Camping Gear", "All Meals", "Park Permits", "Professional Guide"]
   }
@@ -100,80 +97,7 @@ const BookTrip = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {packages.map((pkg) => (
-              <Card key={pkg.id} className="overflow-hidden hover-lift shadow-card">
-                <div className="h-64 bg-muted relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10" />
-                  <div className="absolute top-4 right-4 z-20">
-                    <Badge variant="destructive" className="bg-accent">
-                      Save ${pkg.originalPrice - pkg.price}
-                    </Badge>
-                  </div>
-                  <div className="absolute bottom-4 left-4 z-20 text-white">
-                    <div className="flex items-center gap-1 mb-2">
-                      <MapPin className="h-4 w-4" />
-                      <span className="text-sm">{pkg.destination}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-1">
-                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                        <span className="text-sm">{pkg.rating}</span>
-                        <span className="text-xs opacity-75">({pkg.reviews} reviews)</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-xl mb-2">{pkg.title}</CardTitle>
-                      <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                        <Clock className="h-4 w-4" />
-                        <span>{pkg.duration}</span>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-primary">${pkg.price}</div>
-                      <div className="text-sm text-muted-foreground line-through">${pkg.originalPrice}</div>
-                      <div className="text-xs text-muted-foreground">per person</div>
-                    </div>
-                  </div>
-                </CardHeader>
-                
-                <CardContent>
-                  <div className="mb-4">
-                    <h4 className="font-semibold mb-2">Package Highlights:</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {pkg.highlights.map((highlight, index) => (
-                        <Badge key={index} variant="secondary" className="text-xs">
-                          {highlight}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div className="mb-6">
-                    <h4 className="font-semibold mb-2">Includes:</h4>
-                    <ul className="text-sm text-muted-foreground">
-                      {pkg.includes.map((item, index) => (
-                        <li key={index} className="flex items-center gap-2">
-                          <div className="w-1 h-1 bg-primary rounded-full"></div>
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <Button variant="outline" className="flex-1">
-                      View Details
-                    </Button>
-                    <Button className="flex-1 bg-primary hover:bg-primary-hover">
-                      Book Now
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+              <PackageCard key={pkg.id} pkg={pkg} />
             ))}
           </div>
         </div>
