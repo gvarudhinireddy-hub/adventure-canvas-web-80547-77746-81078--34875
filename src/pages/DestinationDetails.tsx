@@ -25,6 +25,20 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
+
+interface RealTimeDetails {
+  name: string;
+  country: string;
+  description: string;
+  bestSeason: string;
+  topAttractions: string[];
+  currency: string;
+  budgetLevel: string;
+  safetyTips: string[];
+  localTransport: string[];
+  overview: string;
+}
 
 const DestinationDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -35,6 +49,8 @@ const DestinationDetails = () => {
   const [saved, setSaved] = useState(false);
   const [destinationImage, setDestinationImage] = useState<string | null>(null);
   const [imageLoading, setImageLoading] = useState(true);
+  const [realTimeDetails, setRealTimeDetails] = useState<RealTimeDetails | null>(null);
+  const [detailsLoading, setDetailsLoading] = useState(true);
   const destination = destinations.find(d => d.id === Number(id));
 
   // Fetch Unsplash image for destination
@@ -76,6 +92,41 @@ const DestinationDetails = () => {
     };
 
     fetchImage();
+  }, [destination]);
+
+  // Fetch real-time AI-generated details
+  useEffect(() => {
+    const fetchRealTimeDetails = async () => {
+      if (!destination) return;
+      
+      setDetailsLoading(true);
+      try {
+        const placeName = `${destination.name}, ${destination.country}`;
+        console.log(`[DestinationDetails] Fetching real-time details for: ${placeName}`);
+        
+        const { data, error } = await supabase.functions.invoke('fetch-place-details', {
+          body: { placeName }
+        });
+
+        if (error) {
+          console.error(`[DestinationDetails] Real-time details error:`, error);
+          setDetailsLoading(false);
+          return;
+        }
+
+        console.log(`[DestinationDetails] Real-time details response:`, data);
+
+        if (data && !data.error) {
+          setRealTimeDetails(data);
+        }
+      } catch (err) {
+        console.error(`[DestinationDetails] Error fetching real-time details:`, err);
+      } finally {
+        setDetailsLoading(false);
+      }
+    };
+
+    fetchRealTimeDetails();
   }, [destination]);
 
   const handleSaveTrip = async () => {
@@ -282,7 +333,11 @@ const DestinationDetails = () => {
                   <Calendar className="h-8 w-8 text-primary" />
                   <div>
                     <p className="text-sm text-muted-foreground">Best Season</p>
-                    <p className="font-semibold">{destination.bestSeason}</p>
+                    {detailsLoading ? (
+                      <Skeleton className="h-5 w-24" />
+                    ) : (
+                      <p className="font-semibold">{realTimeDetails?.bestSeason || destination.bestSeason}</p>
+                    )}
                   </div>
                 </div>
               </CardContent>
@@ -306,7 +361,11 @@ const DestinationDetails = () => {
                   <DollarSign className="h-8 w-8 text-primary" />
                   <div>
                     <p className="text-sm text-muted-foreground">Currency</p>
-                    <p className="font-semibold">{destination.currency}</p>
+                    {detailsLoading ? (
+                      <Skeleton className="h-5 w-20" />
+                    ) : (
+                      <p className="font-semibold">{realTimeDetails?.currency || destination.currency}</p>
+                    )}
                   </div>
                 </div>
               </CardContent>
@@ -318,7 +377,11 @@ const DestinationDetails = () => {
                   <Star className="h-8 w-8 text-primary" />
                   <div>
                     <p className="text-sm text-muted-foreground">Budget Level</p>
-                    <p className="font-semibold">{destination.budgetLevel}</p>
+                    {detailsLoading ? (
+                      <Skeleton className="h-5 w-20" />
+                    ) : (
+                      <p className="font-semibold">{realTimeDetails?.budgetLevel || destination.budgetLevel}</p>
+                    )}
                   </div>
                 </div>
               </CardContent>
@@ -331,21 +394,26 @@ const DestinationDetails = () => {
       <section className="py-16">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left Column - Main Info */}
             <div className="lg:col-span-2 space-y-8">
               {/* Overview */}
-              {destination.overview && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-2xl">Overview</CardTitle>
-                  </CardHeader>
-                  <CardContent>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-2xl">Overview</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {detailsLoading ? (
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-3/4" />
+                    </div>
+                  ) : (
                     <p className="text-muted-foreground leading-relaxed">
-                      {destination.overview}
+                      {realTimeDetails?.overview || destination.overview || destination.description}
                     </p>
-                  </CardContent>
-                </Card>
-              )}
+                  )}
+                </CardContent>
+              </Card>
 
               {/* Top Attractions */}
               <Card>
@@ -356,16 +424,27 @@ const DestinationDetails = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {destination.topAttractions.map((attraction, index) => (
-                      <div key={index} className="flex items-start gap-3 p-3 rounded-lg bg-accent/10 hover:bg-accent/20 transition-smooth">
-                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
-                          {index + 1}
+                  {detailsLoading ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {[1, 2, 3, 4].map((i) => (
+                        <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-accent/10">
+                          <Skeleton className="w-8 h-8 rounded-full" />
+                          <Skeleton className="h-4 w-32" />
                         </div>
-                        <p className="font-medium">{attraction}</p>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {(realTimeDetails?.topAttractions?.length ? realTimeDetails.topAttractions : destination.topAttractions).map((attraction, index) => (
+                        <div key={index} className="flex items-start gap-3 p-3 rounded-lg bg-accent/10 hover:bg-accent/20 transition-smooth">
+                          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
+                            {index + 1}
+                          </div>
+                          <p className="font-medium">{attraction}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -398,47 +477,62 @@ const DestinationDetails = () => {
               )}
 
               {/* Safety Tips */}
-              {destination.safetyTips && destination.safetyTips.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-2xl flex items-center gap-2">
-                      <Shield className="h-6 w-6 text-primary" />
-                      Safety Tips
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-2xl flex items-center gap-2">
+                    <Shield className="h-6 w-6 text-primary" />
+                    Safety Tips
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {detailsLoading ? (
                     <ul className="space-y-3">
-                      {destination.safetyTips.map((tip, index) => (
+                      {[1, 2, 3].map((i) => (
+                        <li key={i} className="flex items-start gap-3">
+                          <Skeleton className="h-5 w-5 rounded" />
+                          <Skeleton className="h-4 w-full" />
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <ul className="space-y-3">
+                      {(realTimeDetails?.safetyTips?.length ? realTimeDetails.safetyTips : (destination.safetyTips || [])).map((tip, index) => (
                         <li key={index} className="flex items-start gap-3">
                           <Shield className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
                           <span className="text-muted-foreground">{tip}</span>
                         </li>
                       ))}
                     </ul>
-                  </CardContent>
-                </Card>
-              )}
+                  )}
+                </CardContent>
+              </Card>
 
               {/* Local Transport */}
-              {destination.localTransport && destination.localTransport.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-2xl flex items-center gap-2">
-                      <Bus className="h-6 w-6 text-primary" />
-                      Local Transport Options
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-2xl flex items-center gap-2">
+                    <Bus className="h-6 w-6 text-primary" />
+                    Local Transport Options
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {detailsLoading ? (
                     <div className="flex flex-wrap gap-2">
-                      {destination.localTransport.map((transport, index) => (
+                      {[1, 2, 3, 4].map((i) => (
+                        <Skeleton key={i} className="h-8 w-20 rounded-full" />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {(realTimeDetails?.localTransport?.length ? realTimeDetails.localTransport : (destination.localTransport || [])).map((transport, index) => (
                         <Badge key={index} variant="outline" className="text-sm py-2 px-4">
                           {transport}
                         </Badge>
                       ))}
                     </div>
-                  </CardContent>
-                </Card>
-              )}
+                  )}
+                </CardContent>
+              </Card>
             </div>
 
             {/* Right Column - Sidebar */}
