@@ -34,6 +34,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
+import { TripDetailsModal } from "@/components/TripDetailsModal";
 
 interface SavedTrip {
   id: string;
@@ -77,6 +78,8 @@ const SavedTrips = () => {
   const [sharingTrip, setSharingTrip] = useState<SavedTrip | null>(null);
   const [shareLink, setShareLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [viewingTrip, setViewingTrip] = useState<SavedTrip | null>(null);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -393,7 +396,10 @@ const SavedTrips = () => {
   };
 
   const TripCard = ({ trip }: { trip: SavedTrip }) => (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow">
+    <Card 
+      className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group"
+      onClick={() => { setViewingTrip(trip); setViewModalOpen(true); }}
+    >
       <div className="relative h-48 overflow-hidden">
         <img 
           src={trip.destination_image || `https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&auto=format&fit=crop`} 
@@ -435,7 +441,7 @@ const SavedTrips = () => {
               {trip.notes}
             </p>
           )}
-          <div className="flex gap-2 ml-auto">
+          <div className="flex gap-2 ml-auto" onClick={(e) => e.stopPropagation()}>
             <Button 
               variant="outline" 
               size="sm"
@@ -798,6 +804,13 @@ const SavedTrips = () => {
             <p>&copy; 2025 WanderNest. Your journey starts here.</p>
           </div>
         </footer>
+
+        {/* Trip Details Modal */}
+        <TripDetailsModal 
+          open={viewModalOpen} 
+          onOpenChange={setViewModalOpen} 
+          trip={viewingTrip} 
+        />
       </div>
     </>
   );
