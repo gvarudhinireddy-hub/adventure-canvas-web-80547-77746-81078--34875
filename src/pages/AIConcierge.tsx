@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Helmet } from "react-helmet";
+import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -22,10 +23,12 @@ type Message = {
 };
 
 const AIConcierge = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showItineraryModal, setShowItineraryModal] = useState(false);
+  const [hasAutoSent, setHasAutoSent] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -34,6 +37,38 @@ const AIConcierge = () => {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // Handle refine trip from URL params
+  useEffect(() => {
+    const refineDestination = searchParams.get("refine");
+    if (refineDestination && !hasAutoSent) {
+      const country = searchParams.get("country") || "";
+      const budget = searchParams.get("budget") || "";
+      const dates = searchParams.get("dates") || "";
+      
+      let prompt = `I have a saved trip to ${refineDestination}${country ? `, ${country}` : ""}. `;
+      
+      if (budget) {
+        prompt += `My budget is $${budget}. `;
+      }
+      
+      if (dates && dates !== "_") {
+        const [start, end] = dates.split("_");
+        if (start && end) {
+          prompt += `I'm planning to travel from ${start} to ${end}. `;
+        } else if (start) {
+          prompt += `Starting date: ${start}. `;
+        }
+      }
+      
+      prompt += "Please help me refine this trip with detailed recommendations, must-see attractions, local tips, and a suggested daily itinerary.";
+      
+      setInput(prompt);
+      setHasAutoSent(true);
+      // Clear the URL params
+      setSearchParams({});
+    }
+  }, [searchParams, hasAutoSent, setSearchParams]);
 
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;

@@ -27,7 +27,8 @@ import {
   Share2,
   Copy,
   Check,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Sparkles
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -442,6 +443,16 @@ const SavedTrips = () => {
             </p>
           )}
           <div className="flex gap-2 ml-auto" onClick={(e) => e.stopPropagation()}>
+            <Button 
+              variant="default" 
+              size="sm"
+              onClick={() => navigate(`/ai-concierge?refine=${encodeURIComponent(trip.destination_name)}&country=${encodeURIComponent(trip.destination_country)}&budget=${trip.budget || ''}&dates=${trip.start_date || ''}_${trip.end_date || ''}`)}
+              title="Plan with AI"
+              className="bg-gradient-to-r from-primary to-accent hover:opacity-90"
+            >
+              <Sparkles className="h-4 w-4 mr-1" />
+              Plan with AI
+            </Button>
             <Button 
               variant="outline" 
               size="sm"
