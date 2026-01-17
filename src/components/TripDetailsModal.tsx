@@ -110,96 +110,167 @@ export const TripDetailsModal = ({ open, onOpenChange, trip }: TripDetailsModalP
 
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
     
-    // Header
-    doc.setFillColor(79, 70, 229);
-    doc.rect(0, 0, pageWidth, 45, 'F');
+    // Colorful gradient header
+    doc.setFillColor(20, 184, 166); // Teal
+    doc.rect(0, 0, pageWidth, 55, 'F');
+    doc.setFillColor(14, 165, 233); // Sky blue accent
+    doc.rect(0, 0, pageWidth, 8, 'F');
     
+    // Decorative accent stripe
+    doc.setFillColor(245, 158, 11); // Amber accent
+    doc.rect(0, 48, pageWidth, 7, 'F');
+    
+    // Title
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(24);
+    doc.setFontSize(28);
     doc.setFont("helvetica", "bold");
-    doc.text(trip.destination_name, 20, 25);
+    doc.text(trip.destination_name, 20, 30);
     
-    doc.setFontSize(12);
+    doc.setFontSize(14);
     doc.setFont("helvetica", "normal");
-    doc.text(trip.destination_country, 20, 35);
+    doc.text(`📍 ${trip.destination_country}`, 20, 44);
     
-    // Content
-    let y = 60;
-    doc.setTextColor(0, 0, 0);
+    // Content area
+    let y = 70;
     
-    // Trip Details Box
-    doc.setFillColor(248, 250, 252);
-    doc.roundedRect(15, y - 5, pageWidth - 30, 35, 3, 3, 'F');
+    // Trip Details Cards - Colorful boxes
+    const cardWidth = (pageWidth - 50) / 3;
     
+    // Date Card - Orange
+    doc.setFillColor(251, 146, 60);
+    doc.roundedRect(15, y, cardWidth, 30, 3, 3, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(8);
+    doc.text("📅 DATES", 20, y + 10);
     doc.setFontSize(10);
-    doc.setTextColor(100, 100, 100);
-    doc.text("DATES", 25, y + 5);
-    doc.text("BUDGET", 90, y + 5);
-    doc.text("STATUS", 155, y + 5);
-    
-    doc.setFontSize(11);
-    doc.setTextColor(0, 0, 0);
     doc.setFont("helvetica", "bold");
-    doc.text(formatDateRange(), 25, y + 18);
-    doc.text(trip.budget ? `$${trip.budget.toLocaleString()}` : "Flexible", 90, y + 18);
-    doc.text(trip.status.charAt(0).toUpperCase() + trip.status.slice(1), 155, y + 18);
+    const dateText = formatDateRange();
+    doc.text(dateText.length > 18 ? dateText.slice(0, 16) + ".." : dateText, 20, y + 22);
     
-    y += 50;
+    // Budget Card - Green
+    doc.setFillColor(34, 197, 94);
+    doc.roundedRect(20 + cardWidth, y, cardWidth, 30, 3, 3, 'F');
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.text("💰 BUDGET", 25 + cardWidth, y + 10);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text(trip.budget ? `$${trip.budget.toLocaleString()}` : "Flexible", 25 + cardWidth, y + 22);
     
-    // Overview
+    // Status Card - Purple
+    doc.setFillColor(168, 85, 247);
+    doc.roundedRect(25 + cardWidth * 2, y, cardWidth, 30, 3, 3, 'F');
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.text("✈️ STATUS", 30 + cardWidth * 2, y + 10);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text(trip.status.charAt(0).toUpperCase() + trip.status.slice(1), 30 + cardWidth * 2, y + 22);
+    
+    y += 45;
+    
+    // Overview Section
     if (aiDetails?.overview) {
+      // Section header with colored accent
+      doc.setFillColor(20, 184, 166);
+      doc.roundedRect(15, y - 2, 4, 16, 1, 1, 'F');
+      
       doc.setFontSize(14);
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(79, 70, 229);
-      doc.text("Overview", 20, y);
-      y += 10;
+      doc.setTextColor(20, 184, 166);
+      doc.text("✨ About This Destination", 25, y + 8);
+      y += 18;
       
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(60, 60, 60);
-      const overviewLines = doc.splitTextToSize(aiDetails.overview.slice(0, 300) + "...", pageWidth - 40);
+      doc.setTextColor(75, 85, 99);
+      const overviewText = aiDetails.overview.length > 280 ? aiDetails.overview.slice(0, 280) + "..." : aiDetails.overview;
+      const overviewLines = doc.splitTextToSize(overviewText, pageWidth - 40);
       doc.text(overviewLines, 20, y);
       y += overviewLines.length * 5 + 15;
     }
     
-    // Highlights
+    // Highlights Section
     if (aiDetails?.highlights?.length) {
+      doc.setFillColor(251, 146, 60);
+      doc.roundedRect(15, y - 2, 4, 16, 1, 1, 'F');
+      
       doc.setFontSize(14);
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(79, 70, 229);
-      doc.text("Top Highlights", 20, y);
-      y += 10;
+      doc.setTextColor(251, 146, 60);
+      doc.text("🌟 Top Highlights", 25, y + 8);
+      y += 18;
       
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(60, 60, 60);
+      
       aiDetails.highlights.forEach((highlight, i) => {
-        doc.text(`• ${highlight}`, 25, y);
-        y += 7;
+        const colors = [[20, 184, 166], [14, 165, 233], [168, 85, 247], [251, 146, 60]];
+        const color = colors[i % colors.length];
+        doc.setFillColor(color[0], color[1], color[2]);
+        doc.circle(22, y - 1.5, 2, 'F');
+        doc.setTextColor(75, 85, 99);
+        const highlightText = highlight.length > 60 ? highlight.slice(0, 58) + "..." : highlight;
+        doc.text(highlightText, 28, y);
+        y += 8;
       });
       y += 10;
     }
     
-    // Notes
-    if (trip.notes) {
+    // Best Time Section
+    if (aiDetails?.bestTimeToVisit) {
+      doc.setFillColor(245, 245, 255);
+      doc.roundedRect(15, y, pageWidth - 30, 22, 3, 3, 'F');
+      doc.setFillColor(14, 165, 233);
+      doc.roundedRect(15, y, 4, 22, 1, 1, 'F');
+      
+      doc.setFontSize(10);
+      doc.setTextColor(14, 165, 233);
+      doc.setFont("helvetica", "bold");
+      doc.text("🕐 Best Time to Visit: ", 25, y + 14);
+      doc.setTextColor(75, 85, 99);
+      doc.setFont("helvetica", "normal");
+      doc.text(aiDetails.bestTimeToVisit, 75, y + 14);
+      y += 32;
+    }
+    
+    // Notes Section
+    if (trip.notes && y < 240) {
+      doc.setFillColor(168, 85, 247);
+      doc.roundedRect(15, y - 2, 4, 16, 1, 1, 'F');
+      
       doc.setFontSize(14);
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(79, 70, 229);
-      doc.text("My Notes", 20, y);
-      y += 10;
+      doc.setTextColor(168, 85, 247);
+      doc.text("📝 My Notes", 25, y + 8);
+      y += 18;
+      
+      doc.setFillColor(250, 245, 255);
+      doc.roundedRect(15, y - 3, pageWidth - 30, 25, 3, 3, 'F');
       
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(60, 60, 60);
-      const noteLines = doc.splitTextToSize(trip.notes, pageWidth - 40);
-      doc.text(noteLines, 20, y);
+      doc.setTextColor(75, 85, 99);
+      const noteText = trip.notes.length > 150 ? trip.notes.slice(0, 148) + "..." : trip.notes;
+      const noteLines = doc.splitTextToSize(noteText, pageWidth - 45);
+      doc.text(noteLines, 22, y + 8);
     }
     
-    // Footer
+    // Colorful Footer
+    doc.setFillColor(20, 184, 166);
+    doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
+    doc.setFillColor(14, 165, 233);
+    doc.rect(0, pageHeight - 5, pageWidth, 5, 'F');
+    
+    doc.setFontSize(10);
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.text("WanderNest", 20, pageHeight - 8);
+    doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
-    doc.setTextColor(150, 150, 150);
-    doc.text("Generated by WanderNest • wandernest.app", pageWidth / 2, 285, { align: "center" });
+    doc.text("Your Travel Companion", pageWidth - 20, pageHeight - 8, { align: "right" });
     
     doc.save(`${trip.destination_name.replace(/\s+/g, '-')}-trip-plan.pdf`);
   };
