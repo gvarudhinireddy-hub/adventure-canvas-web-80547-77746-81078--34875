@@ -483,10 +483,12 @@ const SavedTrips = () => {
           {type === "wishlist" && "Add destinations you dream of visiting"}
           {type === "all" && "Create your first trip to get started"}
         </p>
-        <Button onClick={() => { resetForm(); setDialogOpen(true); }}>
-          <Plus className="h-4 w-4 mr-2" />
-          Create New Trip
-        </Button>
+        <Link to="/ai-concierge">
+          <Button>
+            <Plus className="h-4 w-4 mr-2" />
+            Create New Trip
+          </Button>
+        </Link>
       </div>
     </Card>
   );
@@ -538,114 +540,114 @@ const SavedTrips = () => {
                 Manage your upcoming adventures, past travels, and dream destinations
               </p>
               {user && (
-                <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
-                  <DialogTrigger asChild>
-                    <Button size="lg">
-                      <Plus className="h-5 w-5 mr-2" />
-                      Create New Trip
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>{editingTrip ? "Edit Trip" : "Create New Trip"}</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="destination_name">Destination Name *</Label>
-                        <Input
-                          id="destination_name"
-                          value={formData.destination_name}
-                          onChange={(e) => setFormData({ ...formData, destination_name: e.target.value })}
-                          placeholder="e.g., Paris"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="destination_country">Country *</Label>
-                        <Input
-                          id="destination_country"
-                          value={formData.destination_country}
-                          onChange={(e) => setFormData({ ...formData, destination_country: e.target.value })}
-                          placeholder="e.g., France"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="destination_image">Image URL</Label>
-                        <Input
-                          id="destination_image"
-                          value={formData.destination_image}
-                          onChange={(e) => setFormData({ ...formData, destination_image: e.target.value })}
-                          placeholder="https://..."
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="start_date">Start Date</Label>
-                          <Input
-                            id="start_date"
-                            type="date"
-                            value={formData.start_date}
-                            onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="end_date">End Date</Label>
-                          <Input
-                            id="end_date"
-                            type="date"
-                            value={formData.end_date}
-                            onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                          />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="budget">Budget</Label>
-                          <Input
-                            id="budget"
-                            type="number"
-                            value={formData.budget}
-                            onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
-                            placeholder="e.g., 2500"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="status">Status</Label>
-                          <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="planned">Planned</SelectItem>
-                              <SelectItem value="booked">Booked</SelectItem>
-                              <SelectItem value="completed">Completed</SelectItem>
-                              <SelectItem value="cancelled">Cancelled</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="notes">Notes</Label>
-                        <Textarea
-                          id="notes"
-                          value={formData.notes}
-                          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                          placeholder="Any notes about your trip..."
-                        />
-                      </div>
-                      <Button 
-                        onClick={handleSaveTrip} 
-                        className="w-full"
-                        disabled={!formData.destination_name || !formData.destination_country}
-                      >
-                        {editingTrip ? "Update Trip" : "Save Trip"}
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                <Button size="lg" onClick={() => navigate('/ai-concierge')}>
+                  <Plus className="h-5 w-5 mr-2" />
+                  Create New Trip
+                </Button>
               )}
             </div>
           </div>
         </section>
+
+        {/* Edit Trip Dialog - kept for editing existing trips */}
+        <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>{editingTrip ? "Edit Trip" : "Create New Trip"}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="destination_name">Destination Name *</Label>
+                <Input
+                  id="destination_name"
+                  value={formData.destination_name}
+                  onChange={(e) => setFormData({ ...formData, destination_name: e.target.value })}
+                  placeholder="e.g., Paris"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="destination_country">Country *</Label>
+                <Input
+                  id="destination_country"
+                  value={formData.destination_country}
+                  onChange={(e) => setFormData({ ...formData, destination_country: e.target.value })}
+                  placeholder="e.g., France"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="destination_image">Image URL</Label>
+                <Input
+                  id="destination_image"
+                  value={formData.destination_image}
+                  onChange={(e) => setFormData({ ...formData, destination_image: e.target.value })}
+                  placeholder="https://..."
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="start_date">Start Date</Label>
+                  <Input
+                    id="start_date"
+                    type="date"
+                    value={formData.start_date}
+                    onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="end_date">End Date</Label>
+                  <Input
+                    id="end_date"
+                    type="date"
+                    value={formData.end_date}
+                    onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="budget">Budget</Label>
+                  <Input
+                    id="budget"
+                    type="number"
+                    value={formData.budget}
+                    onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
+                    placeholder="e.g., 2500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="status">Status</Label>
+                  <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="planned">Planned</SelectItem>
+                      <SelectItem value="booked">Booked</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="notes">Notes</Label>
+                <Textarea
+                  id="notes"
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  placeholder="Any notes about your trip..."
+                />
+              </div>
+              <Button 
+                onClick={handleSaveTrip} 
+                className="w-full"
+                disabled={!formData.destination_name || !formData.destination_country}
+              >
+                {editingTrip ? "Update Trip" : "Save Trip"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Main Content */}
         <section className="py-12">
