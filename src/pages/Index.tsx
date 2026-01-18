@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, MapPin, Star, Users, Award, Plane, Shield, Heart } from "lucide-react";
+import { Search, MapPin, Star, Users, Award, Plane, Shield, Heart, Sparkles, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import heroImage from "@/assets/hero-beach.jpg";
 import baliImage from "@/assets/bali-destination.jpg";
@@ -11,6 +11,11 @@ import tokyoImage from "@/assets/tokyo-destination.jpg";
 import { CurrencySelector } from "@/components/CurrencySelector";
 import { Price } from "@/components/Price";
 import { SearchBar } from "@/components/SearchBar";
+import { PersonalizationQuiz } from "@/components/PersonalizationQuiz";
+import { NewsletterSignup } from "@/components/NewsletterSignup";
+import { SocialShare } from "@/components/SocialShare";
+import { WishlistButton } from "@/components/WishlistButton";
+import { destinations } from "@/data/destinations";
 
 // Map featured destinations to real destination IDs from destinations.ts
 const featuredDestinations = [
@@ -100,16 +105,27 @@ const Index = () => {
         </div>
         <div className="relative z-10 text-center text-white px-4 max-w-4xl mx-auto">
           <h1 className="text-4xl md:text-7xl font-bold mb-6 animate-fade-in">
-            Discover Your Next
-            <span className="block text-gradient-white">Adventure</span>
+            Travel Smarter,
+            <span className="block text-gradient-white">Dream Bigger</span>
           </h1>
-          <p className="text-xl md:text-2xl mb-12 animate-slide-up opacity-90">
-            Curated travel experiences that connect you with the world's most incredible destinations
+          <p className="text-xl md:text-2xl mb-8 animate-slide-up opacity-90 max-w-2xl mx-auto">
+            AI-powered travel planning meets personalized inspiration. Discover hidden gems, plan with confidence, travel like a local.
           </p>
           
           {/* Search Bar */}
-          <div className="animate-slide-up">
+          <div className="animate-slide-up mb-6">
             <SearchBar variant="hero" placeholder="Where do you want to go?" />
+          </div>
+
+          {/* Quiz & CTA buttons */}
+          <div className="flex flex-wrap justify-center gap-4 animate-slide-up">
+            <PersonalizationQuiz />
+            <Link to="/ai-concierge">
+              <Button size="lg" className="bg-white text-primary hover:bg-white/90 gap-2">
+                <Sparkles className="h-4 w-4" />
+                Plan with AI
+              </Button>
+            </Link>
           </div>
           
           <div className="flex flex-wrap justify-center gap-4 mt-8 animate-slide-up">
@@ -272,29 +288,7 @@ const Index = () => {
       {/* Newsletter Section */}
       <section className="py-16">
         <div className="container mx-auto px-4">
-          <Card className="max-w-2xl mx-auto shadow-travel">
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl mb-2">Stay Inspired</CardTitle>
-              <p className="text-muted-foreground">
-                Get travel tips, destination guides, and exclusive deals delivered to your inbox
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Input 
-                  type="email" 
-                  placeholder="Enter your email address..."
-                  className="flex-1"
-                />
-                <Button className="bg-primary hover:bg-primary-hover">
-                  Subscribe
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground mt-3 text-center">
-                No spam, unsubscribe anytime. Read our privacy policy.
-              </p>
-            </CardContent>
-          </Card>
+          <NewsletterSignup className="max-w-xl mx-auto" />
         </div>
       </section>
 

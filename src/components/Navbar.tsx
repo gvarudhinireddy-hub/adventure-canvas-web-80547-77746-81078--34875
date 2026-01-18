@@ -2,9 +2,12 @@ import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { NavigationMenu } from "./NavigationMenu";
-
+import { GlobalSettings } from "./GlobalSettings";
+import { useWishlist } from "@/hooks/useWishlist";
+import { Heart } from "lucide-react";
 export const Navbar = () => {
   const location = useLocation();
+  const { wishlistCount } = useWishlist();
   
   const isActive = (path: string) => location.pathname === path;
   
@@ -67,8 +70,36 @@ export const Navbar = () => {
           ))}
         </div>
 
-        {/* Dropdown Menu */}
-        <NavigationMenu />
+        {/* Right side: Wishlist, Settings, Menu */}
+        <div className="flex items-center gap-1">
+          {/* Wishlist button */}
+          <Link to="/wishlist">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className={cn(
+                "relative",
+                location.pathname === "/wishlist" && "text-red-500"
+              )}
+            >
+              <Heart className={cn(
+                "h-4 w-4",
+                wishlistCount > 0 && "fill-red-500 text-red-500"
+              )} />
+              {wishlistCount > 0 && (
+                <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-[10px] text-white flex items-center justify-center">
+                  {wishlistCount > 9 ? '9+' : wishlistCount}
+                </span>
+              )}
+            </Button>
+          </Link>
+
+          {/* Global Settings (Language & Currency) */}
+          <GlobalSettings />
+
+          {/* Dropdown Menu */}
+          <NavigationMenu />
+        </div>
       </div>
     </nav>
   );
