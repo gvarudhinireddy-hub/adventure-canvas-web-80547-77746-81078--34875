@@ -4,11 +4,14 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CurrencyProvider } from "@/hooks/useCurrency";
+import { LanguageProvider } from "@/hooks/useLanguage";
+import { WishlistProvider } from "@/hooks/useWishlist";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { Navbar } from "./components/Navbar";
 import Index from "./pages/Index";
 import Destinations from "./pages/Destinations";
+import Wishlist from "./pages/Wishlist";
 import DestinationDetails from "./pages/DestinationDetails";
 import TravelGuides from "./pages/TravelGuides";
 import BookTrip from "./pages/BookTrip";
@@ -46,10 +49,12 @@ const App = () => {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <CurrencyProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
+          <LanguageProvider>
+            <CurrencyProvider>
+              <WishlistProvider>
+                <TooltipProvider>
+                  <Toaster />
+                  <Sonner />
               <BrowserRouter>
                 <Navbar />
                 <Routes>
@@ -82,13 +87,16 @@ const App = () => {
                   <Route path="/about" element={<About />} />
                   <Route path="/contact" element={<Contact />} />
                   <Route path="/shared/:token" element={<SharedTrip />} />
+                  <Route path="/wishlist" element={<Wishlist />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
                 <SOSButton />
               </BrowserRouter>
             </TooltipProvider>
-          </CurrencyProvider>
+          </WishlistProvider>
+        </CurrencyProvider>
+      </LanguageProvider>
         </AuthProvider>
       </QueryClientProvider>
     </ErrorBoundary>

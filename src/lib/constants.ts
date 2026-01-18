@@ -29,6 +29,7 @@ export const STORAGE_KEYS = {
   country: 'wandernest_country',
   theme: 'wandernest_theme',
   userPreferences: 'wandernest_user_preferences',
+  language: 'wandernest_language',
 } as const;
 
 // Animation Durations
