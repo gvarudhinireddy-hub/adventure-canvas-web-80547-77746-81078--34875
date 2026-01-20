@@ -29,6 +29,11 @@ export interface Destination {
   coordinates?: { lat: number; lng: number };
   isVerified?: boolean;
   verificationSource?: string;
+  // New fields for enhanced features
+  theme?: ("adventure" | "romantic" | "budget" | "cultural" | "hidden-gem" | "luxury" | "family" | "solo")[];
+  isHiddenGem?: boolean;
+  localQuote?: { text: string; author: string; role: string };
+  quickFacts?: string[];
 }
 
 // Unsplash image URLs for destinations - using a function for dynamic lookup
