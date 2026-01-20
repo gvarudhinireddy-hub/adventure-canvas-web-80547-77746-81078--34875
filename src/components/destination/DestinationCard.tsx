@@ -3,9 +3,10 @@ import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, Loader2 } from "lucide-react";
+import { MapPin, Loader2, Info, Sparkles } from "lucide-react";
 import { Price } from "@/components/Price";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { WishlistButton } from "@/components/WishlistButton";
 import { supabase } from "@/integrations/supabase/client";
 import { Destination } from "@/data/destinations";
 
@@ -23,20 +24,16 @@ interface UnsplashImage {
 export const DestinationCard = ({ destination }: DestinationCardProps) => {
   const [imageData, setImageData] = useState<UnsplashImage | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [hasError, setHasError] = useState(false);
+  const [showQuickFacts, setShowQuickFacts] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
 
     const fetchImage = async () => {
       setIsLoading(true);
-      setHasError(false);
 
       try {
-        // Build search query with destination name and country for better results
         const searchQuery = `${destination.name} ${destination.country}`;
-        console.log(`[DestinationCard] Fetching image for: ${searchQuery}`);
-
         const response = await supabase.functions.invoke("fetch-place-images", {
           body: { query: searchQuery }
         });
@@ -44,24 +41,15 @@ export const DestinationCard = ({ destination }: DestinationCardProps) => {
         if (!isMounted) return;
 
         if (response.error) {
-          console.error(`[DestinationCard] Error for ${destination.name}:`, response.error);
-          setHasError(true);
           setIsLoading(false);
           return;
         }
 
         const images = response.data?.images || [];
-        console.log(`[DestinationCard] Received ${images.length} images for ${destination.name}`);
-
         if (images.length > 0 && images[0]?.url) {
-          // Safely extract first image with HTTPS enforcement
           const firstImage = images[0];
           const imageUrl = firstImage.url?.replace(/^http:/, 'https:');
           
-          console.log(`[DestinationCard] Image URL for ${destination.name}:`, imageUrl);
-
-          // Validate it's a real Unsplash image (not a fallback placeholder)
-          // Only show images from Unsplash API results, not fallbacks
           if (imageUrl && imageUrl.includes('unsplash.com') && !imageUrl.includes('source.unsplash.com')) {
             setImageData({
               url: imageUrl,
@@ -69,64 +57,76 @@ export const DestinationCard = ({ destination }: DestinationCardProps) => {
               photographer: firstImage.photographer || "Unsplash",
               photographerUrl: firstImage.photographerUrl || "https://unsplash.com"
             });
-          } else {
-            // This is a fallback image - per requirements, leave empty
-            console.log(`[DestinationCard] Skipping fallback image for ${destination.name}`);
-            setImageData(null);
           }
-        } else {
-          // No results from Unsplash - leave empty per requirements
-          console.log(`[DestinationCard] No Unsplash results for ${destination.name}`);
-          setImageData(null);
         }
       } catch (error) {
         console.error(`[DestinationCard] Fetch error for ${destination.name}:`, error);
-        setHasError(true);
       } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        if (isMounted) setIsLoading(false);
       }
     };
 
     fetchImage();
-
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, [destination.name, destination.country]);
 
+  const quickFacts = destination.quickFacts || [
+    `Best Season: ${destination.bestSeason}`,
+    `Budget: ${destination.budgetLevel}`,
+    `Currency: ${destination.currency}`
+  ];
+
   return (
-    <Card className="overflow-hidden hover-lift shadow-card">
-      {/* Image Section - min-height ensures visibility */}
-      <div className="h-64 bg-muted relative overflow-visible">
+    <Card 
+      className="overflow-hidden shadow-card group transition-all duration-300 hover:shadow-xl hover:-translate-y-2"
+      onMouseEnter={() => setShowQuickFacts(true)}
+      onMouseLeave={() => setShowQuickFacts(false)}
+    >
+      <div className="h-64 bg-muted relative overflow-hidden">
         {isLoading ? (
-          // Loading state
           <div className="absolute inset-0 flex items-center justify-center bg-muted">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : imageData?.url ? (
-          // Image loaded successfully
           <img
             src={imageData.url}
             alt={imageData.alt}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
             loading="lazy"
-            onError={(e) => {
-              console.error(`[DestinationCard] Image load error for ${destination.name}`);
-              // On image load error, hide the broken image
-              (e.target as HTMLImageElement).style.display = 'none';
-            }}
           />
         ) : (
-          // No image available - show empty muted background (per requirements)
-          <div className="absolute inset-0 bg-muted" />
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20" />
         )}
         
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent z-10 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent z-10 pointer-events-none" />
         
-        {/* Location info overlay */}
+        {destination.isHiddenGem && (
+          <div className="absolute top-4 left-4 z-20">
+            <Badge className="bg-amber-500/90 text-white border-0 gap-1">
+              <Sparkles className="h-3 w-3" />
+              Hidden Gem
+            </Badge>
+          </div>
+        )}
+        
+        <div className="absolute top-4 right-4 z-20">
+          <WishlistButton destination={destination} size="sm" />
+        </div>
+        
+        <div className={`absolute inset-0 bg-black/70 z-15 flex items-center justify-center p-4 transition-opacity duration-300 ${
+          showQuickFacts ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}>
+          <div className="text-white text-center space-y-2">
+            <Info className="h-6 w-6 mx-auto mb-3 text-primary" />
+            <h4 className="font-semibold text-lg">Quick Facts</h4>
+            <ul className="text-sm space-y-1 text-white/90">
+              {quickFacts.slice(0, 4).map((fact, i) => (
+                <li key={i}>• {fact}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+        
         <div className="absolute bottom-4 left-4 z-20 text-white">
           <div className="flex items-center gap-1 mb-2">
             <MapPin className="h-4 w-4" />
@@ -149,10 +149,7 @@ export const DestinationCard = ({ destination }: DestinationCardProps) => {
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xl">{destination.name}</span>
               {destination.isVerified && (
-                <VerifiedBadge 
-                  source={destination.verificationSource || "trusted APIs"}
-                  size="sm"
-                />
+                <VerifiedBadge source={destination.verificationSource || "trusted APIs"} size="sm" />
               )}
             </div>
             <span className="text-sm font-normal text-muted-foreground">{destination.country}</span>
@@ -164,7 +161,7 @@ export const DestinationCard = ({ destination }: DestinationCardProps) => {
       </CardHeader>
 
       <CardContent>
-        <p className="text-muted-foreground mb-3 text-sm">{destination.description}</p>
+        <p className="text-muted-foreground mb-3 text-sm line-clamp-2">{destination.description}</p>
         <div className="flex flex-wrap gap-1 mb-4">
           <Badge variant="outline" className="text-xs">{destination.bestSeason}</Badge>
           <Badge variant="outline" className="text-xs">{destination.budgetLevel} Budget</Badge>
@@ -174,7 +171,7 @@ export const DestinationCard = ({ destination }: DestinationCardProps) => {
           <p className="text-xs">{destination.topAttractions.slice(0, 2).join(", ")}</p>
         </div>
         <Link to={`/destinations/${destination.id}`} className="block w-full">
-          <Button className="w-full bg-primary hover:bg-primary-hover" aria-label={`View details for ${destination.name}`}>
+          <Button className="w-full bg-primary hover:bg-primary-hover transition-all duration-300 group-hover:shadow-lg">
             View Details
           </Button>
         </Link>

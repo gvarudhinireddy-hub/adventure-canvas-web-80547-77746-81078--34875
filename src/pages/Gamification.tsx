@@ -1,21 +1,43 @@
 import { useState } from "react";
 import { Helmet } from "react-helmet";
-import { Award, Trophy, Star, Target, Map, Users, Heart, Camera, Lock, TrendingUp } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { 
+  Trophy, 
+  Star, 
+  Award, 
+  MapPin, 
+  Globe, 
+  Mountain,
+  Palmtree,
+  Camera,
+  Compass,
+  Plane,
+  Heart,
+  Users,
+  Sparkles,
+  Crown,
+  Medal,
+  Target,
+  Zap
+} from "lucide-react";
+import { useWishlist } from "@/hooks/useWishlist";
+import { destinations } from "@/data/destinations";
 
-interface Badge {
+interface BadgeItem {
   id: string;
   name: string;
   description: string;
-  icon: any;
+  icon: React.ElementType;
   unlocked: boolean;
-  progress?: number;
-  requirement: string;
-  category: "travel" | "community" | "safety";
+  progress: number;
+  requirement: number;
+  category: "explorer" | "collector" | "social" | "special";
+  tier: "bronze" | "silver" | "gold" | "platinum";
 }
 
 interface LeaderboardUser {
@@ -25,345 +47,459 @@ interface LeaderboardUser {
   points: number;
   badges: number;
   country: string;
+  title: string;
 }
 
-const badges: Badge[] = [
-  {
-    id: "1",
-    name: "First Steps",
-    description: "Complete your first trip",
-    icon: Map,
-    unlocked: true,
-    requirement: "Complete 1 trip",
-    category: "travel"
-  },
-  {
-    id: "2",
-    name: "Globe Trotter",
-    description: "Visit 5 different countries",
-    icon: Trophy,
-    unlocked: true,
-    requirement: "Visit 5 countries",
-    category: "travel"
-  },
-  {
-    id: "3",
-    name: "Safety Champion",
-    description: "Share 10 safety tips",
-    icon: Heart,
-    unlocked: true,
-    progress: 7,
-    requirement: "Share 10 safety tips (7/10)",
-    category: "safety"
-  },
-  {
-    id: "4",
-    name: "Community Star",
-    description: "Get 100 likes on posts",
-    icon: Star,
-    unlocked: false,
-    progress: 45,
-    requirement: "Get 100 likes (45/100)",
-    category: "community"
-  },
-  {
-    id: "5",
-    name: "Photo Master",
-    description: "Share 50 photos",
-    icon: Camera,
-    unlocked: false,
-    progress: 28,
-    requirement: "Share 50 photos (28/50)",
-    category: "community"
-  },
-  {
-    id: "6",
-    name: "Wanderlust Elite",
-    description: "Visit 20 countries",
-    icon: Trophy,
-    unlocked: false,
-    progress: 12,
-    requirement: "Visit 20 countries (12/20)",
-    category: "travel"
-  },
-  {
-    id: "7",
-    name: "Safety Guardian",
-    description: "Help 25 travelers with safety advice",
-    icon: Heart,
-    unlocked: false,
-    progress: 8,
-    requirement: "Help 25 travelers (8/25)",
-    category: "safety"
-  },
-  {
-    id: "8",
-    name: "Travel Buddy",
-    description: "Connect with 10 fellow travelers",
-    icon: Users,
-    unlocked: false,
-    progress: 3,
-    requirement: "Connect with 10 travelers (3/10)",
-    category: "community"
-  }
-];
-
-const leaderboard: LeaderboardUser[] = [
-  { rank: 1, name: "Emma Wilson", avatar: "/placeholder.svg", points: 2450, badges: 24, country: "USA" },
-  { rank: 2, name: "Sofia Rodriguez", avatar: "/placeholder.svg", points: 2230, badges: 21, country: "Spain" },
-  { rank: 3, name: "Yuki Tanaka", avatar: "/placeholder.svg", points: 2105, badges: 19, country: "Japan" },
-  { rank: 4, name: "Priya Sharma", avatar: "/placeholder.svg", points: 1890, badges: 18, country: "India" },
-  { rank: 5, name: "You", avatar: "/placeholder.svg", points: 1675, badges: 15, country: "Global" }
-];
-
-export default function Gamification() {
+const Gamification = () => {
+  const { wishlist } = useWishlist();
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  
+  // Calculate user stats based on wishlist
+  const viewedContinents = new Set(
+    wishlist.map(id => 
+      destinations.find(d => d.id === id)?.continent
+    ).filter(Boolean)
+  );
+  
+  const viewedCountries = new Set(
+    wishlist.map(id => 
+      destinations.find(d => d.id === id)?.country
+    ).filter(Boolean)
+  );
+
+  // Dynamic badges based on user activity
+  const badges: BadgeItem[] = [
+    // Explorer Badges
+    {
+      id: "first_steps",
+      name: "First Steps",
+      description: "Add your first destination to wishlist",
+      icon: Compass,
+      unlocked: wishlist.length >= 1,
+      progress: Math.min(wishlist.length, 1),
+      requirement: 1,
+      category: "explorer",
+      tier: "bronze"
+    },
+    {
+      id: "wanderer",
+      name: "Wanderer",
+      description: "Save 5 destinations to your wishlist",
+      icon: MapPin,
+      unlocked: wishlist.length >= 5,
+      progress: Math.min(wishlist.length, 5),
+      requirement: 5,
+      category: "explorer",
+      tier: "bronze"
+    },
+    {
+      id: "globetrotter",
+      name: "Globetrotter",
+      description: "Save 15 destinations to your wishlist",
+      icon: Globe,
+      unlocked: wishlist.length >= 15,
+      progress: Math.min(wishlist.length, 15),
+      requirement: 15,
+      category: "explorer",
+      tier: "silver"
+    },
+    {
+      id: "world_explorer",
+      name: "World Explorer",
+      description: "Save 30 destinations to your wishlist",
+      icon: Plane,
+      unlocked: wishlist.length >= 30,
+      progress: Math.min(wishlist.length, 30),
+      requirement: 30,
+      category: "explorer",
+      tier: "gold"
+    },
+    {
+      id: "ultimate_traveler",
+      name: "Ultimate Traveler",
+      description: "Save 50 destinations to your wishlist",
+      icon: Crown,
+      unlocked: wishlist.length >= 50,
+      progress: Math.min(wishlist.length, 50),
+      requirement: 50,
+      category: "explorer",
+      tier: "platinum"
+    },
+    
+    // Collector Badges - Continents
+    {
+      id: "asia_explorer",
+      name: "Explorer of Asia",
+      description: "Save 10 Asian destinations",
+      icon: Mountain,
+      unlocked: wishlist.filter(id => destinations.find(d => d.id === id)?.continent === "Asia").length >= 10,
+      progress: Math.min(wishlist.filter(id => destinations.find(d => d.id === id)?.continent === "Asia").length, 10),
+      requirement: 10,
+      category: "collector",
+      tier: "silver"
+    },
+    {
+      id: "europe_explorer",
+      name: "Explorer of Europe",
+      description: "Save 10 European destinations",
+      icon: Award,
+      unlocked: wishlist.filter(id => destinations.find(d => d.id === id)?.continent === "Europe").length >= 10,
+      progress: Math.min(wishlist.filter(id => destinations.find(d => d.id === id)?.continent === "Europe").length, 10),
+      requirement: 10,
+      category: "collector",
+      tier: "silver"
+    },
+    {
+      id: "beach_lover",
+      name: "Beach Lover",
+      description: "Save 5 beach destinations",
+      icon: Palmtree,
+      unlocked: wishlist.filter(id => destinations.find(d => d.id === id)?.category === "Beach").length >= 5,
+      progress: Math.min(wishlist.filter(id => destinations.find(d => d.id === id)?.category === "Beach").length, 5),
+      requirement: 5,
+      category: "collector",
+      tier: "bronze"
+    },
+    {
+      id: "adventure_seeker",
+      name: "Adventure Seeker",
+      description: "Save 5 adventure destinations",
+      icon: Zap,
+      unlocked: wishlist.filter(id => destinations.find(d => d.id === id)?.category === "Adventure").length >= 5,
+      progress: Math.min(wishlist.filter(id => destinations.find(d => d.id === id)?.category === "Adventure").length, 5),
+      requirement: 5,
+      category: "collector",
+      tier: "bronze"
+    },
+    {
+      id: "culture_enthusiast",
+      name: "Culture Enthusiast",
+      description: "Save 5 cultural destinations",
+      icon: Camera,
+      unlocked: wishlist.filter(id => destinations.find(d => d.id === id)?.category === "Cultural").length >= 5,
+      progress: Math.min(wishlist.filter(id => destinations.find(d => d.id === id)?.category === "Cultural").length, 5),
+      requirement: 5,
+      category: "collector",
+      tier: "bronze"
+    },
+    
+    // Social Badges
+    {
+      id: "social_butterfly",
+      name: "Social Butterfly",
+      description: "Share your first trip with friends",
+      icon: Users,
+      unlocked: false,
+      progress: 0,
+      requirement: 1,
+      category: "social",
+      tier: "bronze"
+    },
+    {
+      id: "inspiration",
+      name: "Inspiration",
+      description: "Have 10 people view your shared trips",
+      icon: Heart,
+      unlocked: false,
+      progress: 0,
+      requirement: 10,
+      category: "social",
+      tier: "silver"
+    },
+    
+    // Special Badges
+    {
+      id: "hidden_gem_hunter",
+      name: "Hidden Gem Hunter",
+      description: "Save 3 hidden gem destinations",
+      icon: Sparkles,
+      unlocked: wishlist.filter(id => {
+        const dest = destinations.find(d => d.id === id);
+        return dest?.isHiddenGem === true;
+      }).length >= 3,
+      progress: Math.min(wishlist.filter(id => {
+        const dest = destinations.find(d => d.id === id);
+        return dest?.isHiddenGem === true;
+      }).length, 3),
+      requirement: 3,
+      category: "special",
+      tier: "gold"
+    },
+    {
+      id: "diverse_explorer",
+      name: "Diverse Explorer",
+      description: "Save destinations from 5 different countries",
+      icon: Target,
+      unlocked: viewedCountries.size >= 5,
+      progress: Math.min(viewedCountries.size, 5),
+      requirement: 5,
+      category: "special",
+      tier: "silver"
+    },
+    {
+      id: "continent_hopper",
+      name: "Continent Hopper",
+      description: "Save destinations from 4 continents",
+      icon: Globe,
+      unlocked: viewedContinents.size >= 4,
+      progress: Math.min(viewedContinents.size, 4),
+      requirement: 4,
+      category: "special",
+      tier: "gold"
+    }
+  ];
+
+  const leaderboard: LeaderboardUser[] = [
+    { rank: 1, name: "TravelMaster", avatar: "", points: 12450, badges: 18, country: "USA", title: "Legendary Explorer" },
+    { rank: 2, name: "WanderlustQueen", avatar: "", points: 11200, badges: 16, country: "UK", title: "Master Traveler" },
+    { rank: 3, name: "GlobeTrotter99", avatar: "", points: 9800, badges: 14, country: "Australia", title: "Elite Wanderer" },
+    { rank: 4, name: "AdventureAce", avatar: "", points: 8500, badges: 12, country: "Canada", title: "Senior Explorer" },
+    { rank: 5, name: "NomadNinja", avatar: "", points: 7200, badges: 11, country: "Germany", title: "Experienced Traveler" },
+    { rank: 6, name: "ExplorerElite", avatar: "", points: 6800, badges: 10, country: "Japan", title: "Rising Star" },
+    { rank: 7, name: "JourneyJunkie", avatar: "", points: 5500, badges: 9, country: "Brazil", title: "Dedicated Wanderer" },
+    { rank: 8, name: "PathfinderPro", avatar: "", points: 4200, badges: 8, country: "India", title: "Aspiring Explorer" }
+  ];
+
+  // User stats
+  const unlockedBadges = badges.filter(b => b.unlocked).length;
+  const totalPoints = unlockedBadges * 100 + wishlist.length * 10;
+  const nextBadge = badges.find(b => !b.unlocked && b.progress > 0);
 
   const filteredBadges = selectedCategory === "all" 
     ? badges 
-    : badges.filter(badge => badge.category === selectedCategory);
+    : badges.filter(b => b.category === selectedCategory);
 
-  const unlockedCount = badges.filter(b => b.unlocked).length;
-  const totalPoints = 1675;
-  const nextBadge = badges.find(b => !b.unlocked && b.progress !== undefined);
+  const getTierColor = (tier: string) => {
+    switch (tier) {
+      case "bronze": return "from-amber-600 to-amber-800";
+      case "silver": return "from-slate-300 to-slate-500";
+      case "gold": return "from-yellow-400 to-yellow-600";
+      case "platinum": return "from-purple-400 to-purple-600";
+      default: return "from-gray-400 to-gray-600";
+    }
+  };
+
+  const getTierBg = (tier: string) => {
+    switch (tier) {
+      case "bronze": return "bg-amber-500/10 border-amber-500/30";
+      case "silver": return "bg-slate-500/10 border-slate-500/30";
+      case "gold": return "bg-yellow-500/10 border-yellow-500/30";
+      case "platinum": return "bg-purple-500/10 border-purple-500/30";
+      default: return "bg-muted border-border";
+    }
+  };
 
   return (
-    <>
+    <div className="min-h-screen bg-background">
       <Helmet>
-        <title>Achievements & Badges | SafeWander</title>
-        <meta name="description" content="Track your travel achievements and compete with fellow travelers worldwide." />
+        <title>Achievements & Badges - WanderNest</title>
+        <meta name="description" content="Track your travel achievements, earn badges, and compete on the global leaderboard." />
       </Helmet>
 
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground mb-2">Achievements & Rewards</h1>
-              <p className="text-muted-foreground">Track your journey and earn badges</p>
-            </div>
-            <Trophy className="h-12 w-12 text-primary" aria-hidden="true" />
+      {/* Hero Section */}
+      <section className="relative bg-gradient-to-br from-primary/20 via-accent/10 to-background py-16">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-8">
+            <Badge className="mb-4 bg-primary/10 text-primary border-primary/20">
+              <Trophy className="h-3 w-3 mr-1" />
+              Gamification
+            </Badge>
+            <h1 className="text-4xl md:text-5xl font-bold mb-4">
+              Your Travel Achievements
+            </h1>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Earn badges, climb the leaderboard, and showcase your wanderlust journey
+            </p>
           </div>
 
           {/* Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-1">Total Points</p>
-                      <p className="text-3xl font-bold text-foreground">{totalPoints}</p>
-                    </div>
-                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Star className="h-6 w-6 text-primary" aria-hidden="true" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-1">Badges Earned</p>
-                      <p className="text-3xl font-bold text-foreground">{unlockedCount}/{badges.length}</p>
-                    </div>
-                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Award className="h-6 w-6 text-primary" aria-hidden="true" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-1">Global Rank</p>
-                      <p className="text-3xl font-bold text-foreground">#5</p>
-                    </div>
-                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                      <TrendingUp className="h-6 w-6 text-primary" aria-hidden="true" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
+            <Card className="text-center p-6 bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+              <div className="text-3xl font-bold text-primary">{totalPoints}</div>
+              <div className="text-sm text-muted-foreground">Total Points</div>
+            </Card>
+            <Card className="text-center p-6 bg-gradient-to-br from-yellow-500/5 to-yellow-500/10 border-yellow-500/20">
+              <div className="text-3xl font-bold text-yellow-600">{unlockedBadges}</div>
+              <div className="text-sm text-muted-foreground">Badges Earned</div>
+            </Card>
+            <Card className="text-center p-6 bg-gradient-to-br from-green-500/5 to-green-500/10 border-green-500/20">
+              <div className="text-3xl font-bold text-green-600">{wishlist.length}</div>
+              <div className="text-sm text-muted-foreground">Destinations Saved</div>
+            </Card>
+            <Card className="text-center p-6 bg-gradient-to-br from-purple-500/5 to-purple-500/10 border-purple-500/20">
+              <div className="text-3xl font-bold text-purple-600">#{Math.max(1, 9 - unlockedBadges)}</div>
+              <div className="text-sm text-muted-foreground">Global Rank</div>
+            </Card>
           </div>
+        </div>
+      </section>
 
-        <main className="container mx-auto px-4 py-8">
-          <Tabs defaultValue="badges" className="space-y-8">
-            <TabsList className="grid w-full md:w-auto grid-cols-2 md:inline-grid">
-              <TabsTrigger value="badges">My Badges</TabsTrigger>
-              <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
-            </TabsList>
+      <div className="container mx-auto px-4 py-12">
+        <Tabs defaultValue="badges" className="space-y-8">
+          <TabsList className="grid w-full max-w-md mx-auto grid-cols-2">
+            <TabsTrigger value="badges" className="gap-2">
+              <Award className="h-4 w-4" />
+              My Badges
+            </TabsTrigger>
+            <TabsTrigger value="leaderboard" className="gap-2">
+              <Trophy className="h-4 w-4" />
+              Leaderboard
+            </TabsTrigger>
+          </TabsList>
 
-            {/* Badges Tab */}
-            <TabsContent value="badges" className="space-y-8">
-              {/* Next Badge Progress */}
-              {nextBadge && (
-                <Card className="bg-primary/5 border-primary/20">
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Target className="h-5 w-5" aria-hidden="true" />
-                      Next Badge: {nextBadge.name}
-                    </CardTitle>
-                    <CardDescription>{nextBadge.requirement}</CardDescription>
+          <TabsContent value="badges" className="space-y-8">
+            {/* Next Badge Progress */}
+            {nextBadge && (
+              <Card className="p-6 bg-gradient-to-r from-primary/5 to-accent/5 border-primary/20">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className={`p-3 rounded-xl bg-gradient-to-br ${getTierColor(nextBadge.tier)}`}>
+                    <nextBadge.icon className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold">Next Badge: {nextBadge.name}</h3>
+                    <p className="text-sm text-muted-foreground">{nextBadge.description}</p>
+                  </div>
+                  <Badge variant="outline" className="capitalize">{nextBadge.tier}</Badge>
+                </div>
+                <Progress value={(nextBadge.progress / nextBadge.requirement) * 100} className="h-3" />
+                <p className="text-sm text-muted-foreground mt-2">
+                  {nextBadge.progress} / {nextBadge.requirement} completed
+                </p>
+              </Card>
+            )}
+
+            {/* Tips Section */}
+            <Card className="p-6 bg-muted/30">
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                Quick Tips to Earn Badges
+              </h3>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li>• Browse and save destinations from different continents</li>
+                <li>• Explore hidden gems like Meghalaya, Cappadocia, or Ladakh</li>
+                <li>• Save beach, adventure, and cultural destinations</li>
+                <li>• Share your trips with friends to earn social badges</li>
+              </ul>
+            </Card>
+
+            {/* Category Filters */}
+            <div className="flex flex-wrap gap-2 justify-center">
+              {["all", "explorer", "collector", "social", "special"].map((cat) => (
+                <Button
+                  key={cat}
+                  variant={selectedCategory === cat ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedCategory(cat)}
+                  className="capitalize"
+                >
+                  {cat === "all" ? "All Badges" : cat}
+                </Button>
+              ))}
+            </div>
+
+            {/* Badges Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredBadges.map((badge) => (
+                <Card 
+                  key={badge.id} 
+                  className={`relative overflow-hidden transition-all duration-300 ${
+                    badge.unlocked 
+                      ? getTierBg(badge.tier)
+                      : "bg-muted/30 border-dashed opacity-60"
+                  }`}
+                >
+                  {badge.unlocked && (
+                    <div className="absolute top-2 right-2">
+                      <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
+                    </div>
+                  )}
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-3 rounded-xl ${
+                        badge.unlocked 
+                          ? `bg-gradient-to-br ${getTierColor(badge.tier)}`
+                          : "bg-muted"
+                      }`}>
+                        <badge.icon className={`h-6 w-6 ${badge.unlocked ? "text-white" : "text-muted-foreground"}`} />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg">{badge.name}</CardTitle>
+                        <Badge variant="outline" className="text-xs capitalize mt-1">
+                          {badge.tier}
+                        </Badge>
+                      </div>
+                    </div>
                   </CardHeader>
                   <CardContent>
-                    <Progress value={nextBadge.progress} className="h-3" />
-                    <p className="text-sm text-muted-foreground mt-2">
-                      {nextBadge.progress}% complete
-                    </p>
+                    <p className="text-sm text-muted-foreground mb-3">{badge.description}</p>
+                    <div className="space-y-2">
+                      <Progress value={(badge.progress / badge.requirement) * 100} className="h-2" />
+                      <p className="text-xs text-muted-foreground">
+                        {badge.progress} / {badge.requirement} {badge.unlocked ? "✓ Complete" : ""}
+                      </p>
+                    </div>
                   </CardContent>
                 </Card>
-              )}
+              ))}
+            </div>
+          </TabsContent>
 
-              {/* How to Earn Tips */}
-              <Card className="bg-muted/50">
-                <CardHeader>
-                  <CardTitle className="text-lg">How to Earn Badges</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2 text-sm">
-                  <div className="flex items-start gap-3">
-                    <Map className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" aria-hidden="true" />
-                    <div>
-                      <p className="font-semibold">Travel Badges</p>
-                      <p className="text-muted-foreground">Complete trips, visit new countries, and explore destinations</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <Users className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" aria-hidden="true" />
-                    <div>
-                      <p className="font-semibold">Community Badges</p>
-                      <p className="text-muted-foreground">Share photos, connect with travelers, and engage with posts</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <Heart className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" aria-hidden="true" />
-                    <div>
-                      <p className="font-semibold">Safety Badges</p>
-                      <p className="text-muted-foreground">Share safety tips and help fellow travelers stay safe</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Filter Buttons */}
-              <div className="flex flex-wrap gap-2">
-                <Badge 
-                  variant={selectedCategory === "all" ? "default" : "outline"}
-                  className="cursor-pointer px-4 py-2"
-                  onClick={() => setSelectedCategory("all")}
-                >
-                  All Badges
-                </Badge>
-                <Badge 
-                  variant={selectedCategory === "travel" ? "default" : "outline"}
-                  className="cursor-pointer px-4 py-2"
-                  onClick={() => setSelectedCategory("travel")}
-                >
-                  Travel
-                </Badge>
-                <Badge 
-                  variant={selectedCategory === "community" ? "default" : "outline"}
-                  className="cursor-pointer px-4 py-2"
-                  onClick={() => setSelectedCategory("community")}
-                >
-                  Community
-                </Badge>
-                <Badge 
-                  variant={selectedCategory === "safety" ? "default" : "outline"}
-                  className="cursor-pointer px-4 py-2"
-                  onClick={() => setSelectedCategory("safety")}
-                >
-                  Safety
-                </Badge>
-              </div>
-
-              {/* Badges Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {filteredBadges.map((badge) => {
-                  const IconComponent = badge.icon;
-                  return (
-                    <Card 
-                      key={badge.id}
-                      className={`relative ${!badge.unlocked ? 'opacity-60' : 'hover:shadow-lg transition-shadow'}`}
-                    >
-                      <CardContent className="p-6 flex flex-col items-center text-center space-y-3">
-                        {!badge.unlocked && (
-                          <Lock className="absolute top-2 right-2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                        )}
-                        <div className={`h-16 w-16 rounded-full ${badge.unlocked ? 'bg-primary' : 'bg-muted'} flex items-center justify-center`}>
-                          <IconComponent className={`h-8 w-8 ${badge.unlocked ? 'text-primary-foreground' : 'text-muted-foreground'}`} aria-hidden="true" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-foreground mb-1">{badge.name}</h3>
-                          <p className="text-xs text-muted-foreground">{badge.description}</p>
-                        </div>
-                        {badge.progress !== undefined && (
-                          <div className="w-full space-y-1">
-                            <Progress value={badge.progress} className="h-2" />
-                            <p className="text-xs text-muted-foreground">{badge.progress}% complete</p>
-                          </div>
-                        )}
-                        <Badge variant={badge.unlocked ? "default" : "outline"} className="text-xs">
-                          {badge.unlocked ? "Unlocked" : badge.requirement}
-                        </Badge>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            </TabsContent>
-
-            {/* Leaderboard Tab */}
-            <TabsContent value="leaderboard" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Trophy className="h-5 w-5 text-primary" aria-hidden="true" />
-                    Top Contributors
-                  </CardTitle>
-                  <CardDescription>Global traveler rankings based on points and achievements</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
+          <TabsContent value="leaderboard">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Trophy className="h-5 w-5 text-yellow-500" />
+                  Top Travelers This Month
+                </CardTitle>
+                <CardDescription>
+                  Compete with travelers worldwide and climb the ranks
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
                   {leaderboard.map((user) => (
-                    <div 
+                    <div
                       key={user.rank}
-                      className={`flex items-center justify-between p-4 rounded-lg ${
-                        user.name === "You" ? 'bg-primary/10 border border-primary/20' : 'bg-muted/50'
+                      className={`flex items-center gap-4 p-4 rounded-lg transition-all ${
+                        user.rank <= 3 
+                          ? "bg-gradient-to-r from-yellow-500/10 to-amber-500/5 border border-yellow-500/20" 
+                          : "bg-muted/30"
                       }`}
                     >
-                      <div className="flex items-center gap-4">
-                        <div className={`h-10 w-10 rounded-full flex items-center justify-center font-bold ${
-                          user.rank === 1 ? 'bg-yellow-500 text-white' :
-                          user.rank === 2 ? 'bg-gray-400 text-white' :
-                          user.rank === 3 ? 'bg-orange-600 text-white' :
-                          'bg-muted text-muted-foreground'
-                        }`}>
-                          #{user.rank}
-                        </div>
-                        <Avatar className="h-12 w-12">
-                          <AvatarImage src={user.avatar} alt={user.name} />
-                          <AvatarFallback>{user.name[0]}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-semibold text-foreground">{user.name}</p>
-                          <p className="text-sm text-muted-foreground">{user.country}</p>
-                        </div>
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
+                        user.rank === 1 ? "bg-yellow-500 text-white" :
+                        user.rank === 2 ? "bg-slate-400 text-white" :
+                        user.rank === 3 ? "bg-amber-600 text-white" :
+                        "bg-muted text-muted-foreground"
+                      }`}>
+                        {user.rank <= 3 ? <Medal className="h-5 w-5" /> : user.rank}
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold text-foreground">{user.points} pts</p>
-                        <p className="text-sm text-muted-foreground">{user.badges} badges</p>
+                      <Avatar className="h-12 w-12">
+                        <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                          {user.name.slice(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold truncate">{user.name}</p>
+                        <p className="text-xs text-muted-foreground">{user.title}</p>
                       </div>
+                      <div className="text-right hidden sm:block">
+                        <p className="font-bold text-primary">{user.points.toLocaleString()} pts</p>
+                        <p className="text-xs text-muted-foreground">{user.badges} badges</p>
+                      </div>
+                      <Badge variant="outline" className="hidden md:flex">
+                        {user.country}
+                      </Badge>
                     </div>
                   ))}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </main>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
-    </>
+    </div>
   );
-}
+};
+
+export default Gamification;
